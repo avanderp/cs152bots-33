@@ -30,7 +30,11 @@ class ModBot(discord.Client):
     def __init__(self): 
         intents = discord.Intents.default()
         intents.messages = True
-        super().__init__(command_prefix='.', intents=intents)
+        intents.reactions = True
+        intents.dm_reactions = True
+        intents.guild_reactions = True
+        #intents.message_content = True
+        super().__init__(command_prefix='.', intents=intents, max_messages = 1000)
         self.group_num = None
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
         self.reports = {} # Map from user IDs to the state of their report
@@ -66,11 +70,27 @@ class ModBot(discord.Client):
         if reaction.message.guild:
             await self.handle_channel_reaction(message, reaction, user)
         else:
-            await self.handle_dm_reaction(message, reaction, user)        
+            await self.handle_dm_reaction(message, reaction, user)   
+
+    async def on_raw_reaction_add(self, payload):
+        print(f"We've entered on_raw_reaction_add.")  
+
+        # extract the contents of the reaction and metadata; see https://stackoverflow.com/questions/59854340/how-do-i-use-on-raw-reaction-add-in-discord-py 
+        channel = self.bot.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        user = self.bot.get_user(payload.user_id)
+        if not user:
+            user = await self.bot.fetch_user(payload.user_id)
+        # instead of reaction we should use payload.emoji
+        # for example:  
+        await message.remove_reaction(payload.emoji, user)
+
+        # print(f"The bot's internal message cache is {self.cached_messages}")
+        # for message in self.cached_messages:
+        #     print(f"{message.content}")
 
 
     async def handle_dm_reaction(self, message, reaction, user):
-
         print(f"We've entered handle_dm_reaction.")
 
         # Get the id of the person the Bot sent the react-request message to (the user who reported)
@@ -138,7 +158,7 @@ class ModBot(discord.Client):
             return
 
         # TODO: if a message is sent within the group-33-mod channel, write a function here, similar to handle_dm, that can handle a moderator message (entrypoint to moderator reporting flow)
-        
+
 
         # Forward the message to the mod channel
         mod_channel = self.mod_channels[message.guild.id]
