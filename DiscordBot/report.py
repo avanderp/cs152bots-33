@@ -6,6 +6,7 @@ class State(Enum):
     REPORT_START = auto()
     AWAITING_MESSAGE = auto()
     MESSAGE_IDENTIFIED = auto()
+    SCALE_IDENTIFIED = auto()
     REPORT_COMPLETE = auto()
 
 class Report:
@@ -56,10 +57,17 @@ class Report:
             # Here we've found the message - it's up to you to decide what to do next!
             self.state = State.MESSAGE_IDENTIFIED
             return ["I found this message:", "```" + message.author.name + ": " + message.content + "```", \
-                    "This is all I know how to do right now - it's up to you to build out the rest of my reporting flow!"]
+                    "Thank you for creating a report! We'll be asking you a few questions to gather extra details about the report. \n " \
+                    "Type next to `continue` to report, and say `cancel` to cancel at any point."]
         
         if self.state == State.MESSAGE_IDENTIFIED:
-            return ["<insert rest of reporting flow here>"]
+            reply = "First, we'd like to know who your post affects. Please react with the emoji corresponding to the correct category.\n"
+            reply += "👤: Individual\n"
+            reply += "👥: Local Community\n"
+            reply += "🌐: Nationwide\n"
+            reply += "\n"
+            reply += "Once you're done selecting, please type `continue`."
+            return [reply]
 
         return []
 

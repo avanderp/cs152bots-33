@@ -29,7 +29,7 @@ with open(token_path) as f:
 class ModBot(discord.Client):
     def __init__(self): 
         intents = discord.Intents.default()
-        intents.message_content = True
+        intents.messages = True
         super().__init__(command_prefix='.', intents=intents)
         self.group_num = None
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
@@ -53,7 +53,15 @@ class ModBot(discord.Client):
             for channel in guild.text_channels:
                 if channel.name == f'group-{self.group_num}-mod':
                     self.mod_channels[guild.id] = channel
+
+    async def on_reaction_add(reaction, user):
+        '''
+        This function is called whenever a reaction is added to a message in a channel that the bot can see (including DMs). 
+        Currently the bot is configured to only handle reactions that are sent over DMs or in your group's "group-#" channel. 
+        '''
+
         
+
 
     async def on_message(self, message):
         '''
