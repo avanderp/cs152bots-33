@@ -58,39 +58,42 @@ class ModBot(discord.Client):
                 if channel.name == f'group-{self.group_num}-mod':
                     self.mod_channels[guild.id] = channel
 
-    async def on_reaction_add(self, reaction, user):
-        '''
-        This function is called whenever a reaction is added to a message in a channel that the bot can see (including DMs). 
-        Currently the bot is configured to only handle reactions that are sent over DMs or in your group's "group-#" channel. 
-        '''
+    # async def on_reaction_add(self, reaction, user):
+    #     '''
+    #     This function is called whenever a reaction is added to a message in a channel that the bot can see (including DMs). 
+    #     Currently the bot is configured to only handle reactions that are sent over DMs or in your group's "group-#" channel. 
+    #     '''
 
-        print(f"We've entered on_reaction_add.")
+    #     print(f"We've entered on_reaction_add.")
 
-        # Check if this message was sent in a server ("guild") or if it's a DM
-        if reaction.message.guild:
-            await self.handle_channel_reaction(message, reaction, user)
-        else:
-            await self.handle_dm_reaction(message, reaction, user)   
+    #     # Check if this message was sent in a server ("guild") or if it's a DM
+    #     if reaction.message.guild:
+    #         await self.handle_channel_reaction(message, reaction, user)
+    #     else:
+    #         await self.handle_dm_reaction(message, reaction, user)   
 
     async def on_raw_reaction_add(self, payload):
         print(f"We've entered on_raw_reaction_add.")  
 
         # extract the contents of the reaction and metadata; see https://stackoverflow.com/questions/59854340/how-do-i-use-on-raw-reaction-add-in-discord-py 
-        channel = self.bot.get_channel(payload.channel_id)
+        print(f"Extracting the contents of the reaction payload.")
+        channel = self.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
-        user = self.bot.get_user(payload.user_id)
+        user = self.get_user(payload.user_id)
         if not user:
-            user = await self.bot.fetch_user(payload.user_id)
-        # instead of reaction we should use payload.emoji
-        # for example:  
-        await message.remove_reaction(payload.emoji, user)
+            user = await self.fetch_user(payload.user_id)
 
-        # print(f"The bot's internal message cache is {self.cached_messages}")
-        # for message in self.cached_messages:
-        #     print(f"{message.content}")
+        emoji = str(payload.emoji)
+
+        # Check if this message was sent in a server ("guild") or if it's a DM
+        if message.guild:
+            await self.handle_channel_reaction(message, emoji, user)
+        else:
+            await self.handle_dm_reaction(message, emoji, user)  
 
 
-    async def handle_dm_reaction(self, message, reaction, user):
+
+    async def handle_dm_reaction(self, message, emoji, user):
         print(f"We've entered handle_dm_reaction.")
 
         # Get the id of the person the Bot sent the react-request message to (the user who reported)
@@ -104,7 +107,7 @@ class ModBot(discord.Client):
 
 
         # Let the report class handle this message; forward all the messages it returns to uss
-        responses = await self.reports[report_author_id].handle_reaction(message, reaction, user)
+        responses = await self.reports[report_author_id].handle_reaction(message, emoji, user)
         for r in responses:
             await message.channel.send(r)
 
@@ -148,8 +151,8 @@ class ModBot(discord.Client):
         for r in responses:
             await message.channel.send(r)
 
-        # If the report is complete or cancelled, remove it from our map
-        if self.reports[author_id].report_complete():
+        # If the report is cancelled, remove it from our map
+        if self.reports[author_id].report_cancelled():
             self.reports.pop(author_id)
 
     async def handle_channel_message(self, message):
