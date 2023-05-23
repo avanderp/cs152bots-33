@@ -54,13 +54,39 @@ class ModBot(discord.Client):
                 if channel.name == f'group-{self.group_num}-mod':
                     self.mod_channels[guild.id] = channel
 
-    async def on_reaction_add(reaction, user):
+    async def on_reaction_add(self, reaction, user):
         '''
         This function is called whenever a reaction is added to a message in a channel that the bot can see (including DMs). 
         Currently the bot is configured to only handle reactions that are sent over DMs or in your group's "group-#" channel. 
         '''
 
-        
+        print(f"We've entered on_reaction_add.")
+
+        # Check if this message was sent in a server ("guild") or if it's a DM
+        if reaction.message.guild:
+            await self.handle_channel_reaction(message, reaction, user)
+        else:
+            await self.handle_dm_reaction(message, reaction, user)        
+
+
+    async def handle_dm_reaction(self, message, reaction, user):
+
+        print(f"We've entered handle_dm_reaction.")
+
+        # Get the id of the person the Bot sent the react-request message to (the user who reported)
+        report_author_id = user.id
+
+        # If we don't currently have an active report for this user, add one
+        if report_author_id not in self.reports:
+            reply =  "You do not have any currently active reports. Please start a new report.\n"
+            await message.channel.send(reply) 
+            return 
+
+
+        # Let the report class handle this message; forward all the messages it returns to uss
+        responses = await self.reports[report_author_id].handle_reaction(message, reaction, user)
+        for r in responses:
+            await message.channel.send(r)
 
 
     async def on_message(self, message):
@@ -110,6 +136,9 @@ class ModBot(discord.Client):
         # Only handle messages sent in the "group-#" channel
         if not message.channel.name == f'group-{self.group_num}':
             return
+
+        # TODO: if a message is sent within the group-33-mod channel, write a function here, similar to handle_dm, that can handle a moderator message (entrypoint to moderator reporting flow)
+        
 
         # Forward the message to the mod channel
         mod_channel = self.mod_channels[message.guild.id]

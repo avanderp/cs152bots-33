@@ -67,9 +67,20 @@ class Report:
             reply += "🌐: Nationwide\n"
             reply += "\n"
             reply += "Once you're done selecting, please type `continue`."
+            self.state = State.SCALE_IDENTIFIED
             return [reply]
 
+        if self.state == State.SCALE_IDENTIFIED:
+            # do the next question
+            pass
+
         return []
+
+
+    async def handle_reaction(message, reaction, user):
+        reply = "We detected an emoji response to a report!"
+        return [reply]
+
 
     def report_complete(self):
         return self.state == State.REPORT_COMPLETE
