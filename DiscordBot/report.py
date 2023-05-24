@@ -71,6 +71,8 @@ STATE_TO_EMOJI_OPTIONS = {
 
 DEFAULT_CONTINUE_SYSTEM_MESSAGE_SUFFIX = "Once you're done selecting, please type `continue`. Type `cancel` to cancel the report at any point."
 
+MESSAGE_ONLY_STATES = set([State.SEVERITY_IDENTIFIED_CONFUSING, State.SEVERITY_IDENTIFIED_OTHER])
+
 NO_CONTINUE_STATES = set([State.THANK_FOR_REPORTING])
 
 class Report:
@@ -83,10 +85,6 @@ class Report:
         self.state = State.REPORT_START
         self.client = client
         self.message = None
-
-        # to track the id of the message sent at each state
-        # will allow us to assign the emoji reactions to a state's message back to the state
-        self.state_to_message_id = {}
 
         # tracking the options chosen (we will use these for the moderator reporting flow)
         # this will store EmojiOption instances
@@ -131,7 +129,7 @@ class Report:
             self.state = State.MESSAGE_IDENTIFIED
             return ["I found this message:", "```" + message.author.name + ": " + message.content + "```", \
                     "Thank you for creating a report! We'll be asking you a few questions to gather extra details about the report. \n " \
-                    "Type next to `continue` to report, and say `cancel` to cancel at any point."]
+                    "Type `continue` to continue the report, and say `cancel` to cancel at any point."]
         
 
 
@@ -146,7 +144,7 @@ class Report:
 
             reply_list = []
 
-            if self.state in [State.SEVERITY_IDENTIFIED_CONFUSING, State.SEVERITY_IDENTIFIED_OTHER]:
+            if self.state in MESSAGE_ONLY_STATES:
                 reply_list.append(STATE_TO_MESSAGE_PREFIX[self.state])
                 self.state = STATE_TO_SINGLE_NEXT_STATE[self.state]
 

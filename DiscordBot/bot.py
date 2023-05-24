@@ -7,6 +7,7 @@ import logging
 import re
 import requests
 from report import Report
+from response import Response
 import pdb
 
 # Set up logging to the console
@@ -39,13 +40,14 @@ class ModBot(discord.Client):
         intents.reactions = True
         intents.dm_reactions = True
         intents.guild_reactions = True
-        #intents.message_content = True
         super().__init__(command_prefix='.', intents=intents, max_messages = 1000)
         self.group_num = None
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
         self.reports = {} # Map from user IDs to the state of their report
-        self.moderator_reports = {} # Map from moderator ID to the state of their moderator report
+        self.moderator_responses = {} # Map from moderator ID to the state of their moderator report response
+        self.report_id_to_report = {} # Map from report IDs to the Report class instance
         self.next_report_id = 0
+        self.next_moderator_response_id = 0
 
     async def on_ready(self):
         print(f'{self.user.name} has connected to Discord! It is these guilds:')
@@ -168,11 +170,18 @@ class ModBot(discord.Client):
         
         # If the report is finished, initiate the moderator reporting flow
         if self.reports[author_id].report_finished():
-            # Send the report summary to the moderator
+            # associate this report with a report id
+            self.report_id_to_report[self.next_report_id] = self.reports[author_id]
+
+            # Send the report summary to the moderator channel
             report_summary = self.reports[author_id].generate_summary(report_id = self.next_report_id)
+
+            # move to the next report id
             self.next_report_id += 1
 
             await self.personal_mod_channel.send(report_summary)
+
+            
 
     async def handle_channel_message(self, message):
         # Only handle messages sent in the "group-#" channel
@@ -189,6 +198,44 @@ class ModBot(discord.Client):
         await mod_channel.send(self.code_format(scores))
 
     
+    async def handle_moderator_channel_message(self, message):
+        # Handle a help message
+        if message.content == Response.HELP_KEYWORD:
+            reply =  "Use the `start` command to begin the reporting process.\n"
+            reply += "Use the `cancel` command to cancel the report process.\n"
+            await message.channel.send(reply)
+            return
+
+        moderator_id = message.author.id
+        responses = []
+
+        # Only respond to non-start messages if the moderator already has an existing response flow
+        if moderator_id not in self.moderator_responses and not message.content.startswith(Response.START_KEYWORD):
+            return
+
+        # If we don't currently have an active report response for this moderator, add one
+        if moderator_id not in self.moderator_responses:
+            self.moderator_responses[moderator_id] = Response(self)  # our bot is the client
+
+        # Let the report class handle this message; forward all the messages it returns to uss
+        responses = await self.moderator_responses[moderator_id].handle_message(message)
+        for r in responses:
+            await message.channel.send(r)
+
+        # If the report is cancelled, remove it from our map
+        if self.moderator_responses[moderator_id].report_cancelled():
+            self.moderator_responses.pop(moderator_id)
+        
+        # NOTE: we may not need this next portion
+        # If the report is finished, initiate the moderator reporting flow
+        if self.moderator_responses[moderator_id].report_finished():
+            # Send the report summary to the moderator
+            response_summary = self.moderator_responses[moderator_id].generate_summary()
+            self.next_moderator_response_id += 1
+
+            await self.personal_mod_channel.send(response_summarys)
+
+
     def eval_text(self, message):
         ''''
         TODO: Once you know how you want to evaluate messages in your channel, 
