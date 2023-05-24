@@ -27,7 +27,7 @@ with open(token_path) as f:
 
 
 
-MOD_CHANNEL_ID = 1103033289041789049
+PERSONAL_GROUP_NUMBER_STR = "33"
 
 
 class ModBot(discord.Client):
@@ -45,7 +45,6 @@ class ModBot(discord.Client):
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
         self.reports = {} # Map from user IDs to the state of their report
         self.moderator_reports = {} # Map from moderator ID to the state of their moderator report
-        self.group_mod_channel = self.get_channel(MOD_CHANNEL_ID)
         self.next_report_id = 0
 
     async def on_ready(self):
@@ -66,6 +65,9 @@ class ModBot(discord.Client):
             for channel in guild.text_channels:
                 if channel.name == f'group-{self.group_num}-mod':
                     self.mod_channels[guild.id] = channel
+
+                    if self.group_num == PERSONAL_GROUP_NUMBER_STR:
+                        self.personal_mod_channel = channel
 
     # async def on_reaction_add(self, reaction, user):
     #     '''
@@ -170,7 +172,7 @@ class ModBot(discord.Client):
             report_summary = self.reports[author_id].generate_summary(report_id = self.next_report_id)
             self.next_report_id += 1
 
-            self.group_mod_channel.send(report_summary)
+            await self.personal_mod_channel.send(report_summary)
 
     async def handle_channel_message(self, message):
         # Only handle messages sent in the "group-#" channel

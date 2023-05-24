@@ -138,7 +138,6 @@ class Report:
         # START OF OUR CUSTOM REPORTING STATES
         # Next, we progress through our own states that are outlined in our user reporting flow diagram
         if message.content == self.CONTINUE_KEYWORD:
-            print(self.state_to_selected_emoji_options, "\n\n")
 
             # the user has said `continue` after responding to the previous state
             # we now progress to the next state
@@ -198,6 +197,7 @@ class Report:
     def report_finished(self):
         return self.state == State.REPORT_FINISHED
 
+    # TODO
     def generate_summary(self, report_id):  # there may be additional parameters to add in the metadata (user id, etc.) to the report summary
         # based on the contents of self.state_to_selected_emoji_options (the options selected at each state by the user)
         # format a string that will be sent to the moderator channel to describe the report
