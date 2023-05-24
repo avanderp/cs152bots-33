@@ -26,7 +26,13 @@ with open(token_path) as f:
     discord_token = tokens['discord']
 
 
+
+MOD_CHANNEL_ID = 1103033289041789049
+
+
 class ModBot(discord.Client):
+    
+
     def __init__(self): 
         intents = discord.Intents.default()
         intents.messages = True
@@ -38,6 +44,9 @@ class ModBot(discord.Client):
         self.group_num = None
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
         self.reports = {} # Map from user IDs to the state of their report
+        self.moderator_reports = {} # Map from moderator ID to the state of their moderator report
+        self.group_mod_channel = self.get_channel(MOD_CHANNEL_ID)
+        self.next_report_id = 0
 
     async def on_ready(self):
         print(f'{self.user.name} has connected to Discord! It is these guilds:')
@@ -154,6 +163,14 @@ class ModBot(discord.Client):
         # If the report is cancelled, remove it from our map
         if self.reports[author_id].report_cancelled():
             self.reports.pop(author_id)
+        
+        # If the report is finished, initiate the moderator reporting flow
+        if self.reports[author_id].report_finished():
+            # Send the report summary to the moderator
+            report_summary = self.reports[author_id].generate_summary(report_id = self.next_report_id)
+            self.next_report_id += 1
+
+            self.group_mod_channel.send(report_summary)
 
     async def handle_channel_message(self, message):
         # Only handle messages sent in the "group-#" channel

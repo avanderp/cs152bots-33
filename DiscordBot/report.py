@@ -53,7 +53,7 @@ STATE_TO_EMOJI_OPTIONS = {
         "🌐": EmojiOption(emoji = "🌐", option_str = "Nationwide")
     },
     State.SCALE_IDENTIFIED: {
-        "❌": EmojiOption(emoji = "❌", option_str = "False Information")
+        "❌": EmojiOption(emoji = "❌", option_str = "False Information"),
     },
     State.GENERAL_CATEGORY_IDENTIFIED: {
         "🔴": EmojiOption(emoji = "🔴", option_str = "Medical Disinformation: Politicizing Medical Response"),
@@ -145,6 +145,12 @@ class Report:
             if self.state in STATE_TO_SINGLE_NEXT_STATE:
                 self.state = STATE_TO_SINGLE_NEXT_STATE[self.state]
 
+            reply_list = []
+
+            if self.state in [State.SEVERITY_IDENTIFIED_CONFUSING, State.SEVERITY_IDENTIFIED_OTHER]:
+                reply_list.append(STATE_TO_MESSAGE_PREFIX[self.state])
+                self.state = STATE_TO_SINGLE_NEXT_STATE[self.state]
+
             # start with the message prefix for that state if there is one
             reply = STATE_TO_MESSAGE_PREFIX[self.state] if self.state in STATE_TO_MESSAGE_PREFIX else ""
 
@@ -163,7 +169,9 @@ class Report:
             if self.state == State.THANK_FOR_REPORTING:
                 self.state = State.REPORT_FINISHED
 
-            return [reply]
+            reply_list.append(reply)
+
+            return reply_list
 
         return []
 
@@ -189,6 +197,13 @@ class Report:
 
     def report_finished(self):
         return self.state == State.REPORT_FINISHED
+
+    def generate_summary(self, report_id):  # there may be additional parameters to add in the metadata (user id, etc.) to the report summary
+        # based on the contents of self.state_to_selected_emoji_options (the options selected at each state by the user)
+        # format a string that will be sent to the moderator channel to describe the report
+
+        return f"Placeholder Report Summary for Report {report_id}!"
+
     
 
 
