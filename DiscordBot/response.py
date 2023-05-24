@@ -95,6 +95,8 @@ class Response:
         
         
 
+        # NOTE: FROM HERE ON IN THIS FUNCTION HAS NOT YET BEEN EDITED FOR THE MODERATOR FLOW
+
 
         # START OF OUR CUSTOM REPORTING STATES
         # Next, we progress through our own states that are outlined in our user reporting flow diagram
