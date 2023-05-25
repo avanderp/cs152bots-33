@@ -9,6 +9,8 @@ import requests
 from report import Report
 from response import Response
 import pdb
+from collections import defaultdict
+
 
 # Set up logging to the console
 logger = logging.getLogger('discord')

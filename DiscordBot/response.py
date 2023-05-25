@@ -1,10 +1,10 @@
 # file for implementing the class representing a moderator response
-
 from enum import Enum, auto
 import discord
 import re
 from reactions import EmojiOption, ModeratorAction
 from collections import defaultdict
+from typing import Set
 
 class State(Enum):
     RESPONSE_START = auto()
@@ -25,14 +25,14 @@ STATE_TO_MESSAGE_PREFIX = {
     State.ASK_FOR_USER_ACTIONS: "What actions should be taken on the user who created the post?",
     State.ASK_FOR_GROUP_ACTIONS: "What actions should be taken on the group in which the post was made?",
     State.ASK_FOR_REASON_FOR_ELEVATING: "Why should this report be forwarded to advanced moderators?",
-    State.THANK_MODERATOR: "Thank you for responding to the report! Begin a new response at any time by typing `respond`"
+    State.THANK_MODERATOR: "Thank you for responding to the report! Begin a new response at any time by typing `respond`",
     State.GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS: "[ADVANCED MODERATOR REPORT NOTIFICATION]"  # TODO: handle_message will handle generating the report summary for the advanced moderators to act on
 }
 
 # If the state has only one next state to transition into
 STATE_TO_SINGLE_NEXT_STATE =  {
-    State.REPORT_IDENTIFIED: State:ASK_FOR_POST_ACTIONS,
-    State.ASK_FOR_POST_ACTIONS: State:ASK_FOR_USER_ACTIONS,
+    State.REPORT_IDENTIFIED: State.ASK_FOR_POST_ACTIONS,
+    State.ASK_FOR_POST_ACTIONS: State.ASK_FOR_USER_ACTIONS,
     State.ASK_FOR_USER_ACTIONS: State.ASK_FOR_GROUP_ACTIONS,
     State.ASK_FOR_REASON_FOR_ELEVATING: State.GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS,
 }
@@ -54,7 +54,7 @@ STATE_TO_EMOJI_OPTIONS = {
     State.ASK_FOR_GROUP_ACTIONS: {
         "1️⃣": EmojiOption(emoji = "1️⃣", option_str = "Notify user of transgression", post_action_message = "The user who created the post has been notified of the transgression."),
 
-    }
+    },
     State.ASK_FOR_REASON_FOR_ELEVATING: {
         "1️⃣": EmojiOption(emoji = "1️⃣", option_str = "Severity of the post"),
 
@@ -63,7 +63,7 @@ STATE_TO_EMOJI_OPTIONS = {
 
 DEFAULT_CONTINUE_SYSTEM_MESSAGE_SUFFIX = "Once you're done selecting, please type `continue`. Type `cancel` to cancel the report at any point."
 
-MESSAGE_THEN_CONTINUE = set([State.SEVERITY_IDENTIFIED_CONFUSING, State.SEVERITY_IDENTIFIED_OTHER])
+MESSAGE_THEN_CONTINUE = set([])
 
 NO_CONTINUE_STATES = set([State.THANK_MODERATOR])
 
@@ -218,6 +218,23 @@ class Response:
     async def notify_group_of_transgressions(self):
         # Notify users in group or joining group about the high volume of misinformation
         raise NotImplementedError()
+
+
+    async def handle_reaction(self, message, emoji, user):
+
+        # check this is a state with valid emoji reaction options
+        if self.state in STATE_TO_EMOJI_OPTIONS:
+
+            # only store the emoji option as a response if the emoji is one associated with the sate
+            if emoji in STATE_TO_EMOJI_OPTIONS[self.state]:
+
+                emoji_option = STATE_TO_EMOJI_OPTIONS[self.state][emoji]
+
+                print(f"The moderator reacted with option {emoji} during state {self.state}")
+                self.moderator_state_to_selected_emoji[self.state].add(emoji_option)
+
+        # we don't need to print a message to the user immediately upon reacting
+        return []
 
     # TODO 
     def generate_summary_for_advanced_moderators(self):

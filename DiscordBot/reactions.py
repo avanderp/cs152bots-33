@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from typing import Callable
 
 class ModeratorAction(Enum):
