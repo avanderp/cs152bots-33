@@ -52,21 +52,43 @@ STATE_TO_EMOJI_OPTIONS = {
         "👥": EmojiOption(emoji = "👥", option_str = "Local Community"),
         "🌐": EmojiOption(emoji = "🌐", option_str = "Nationwide")
     },
-    State.SCALE_IDENTIFIED: {
-        "❌": EmojiOption(emoji = "❌", option_str = "False Information"),
+    State.SCALE_IDENTIFIED: { #past tense -- we've already done the scale -- copy the general -- change option fro there
+        "1️⃣": EmojiOption(emoji = "1️⃣", option_str = "False Information"),
+        "2️⃣": EmojiOption(emoji = "2️⃣", option_str = "Spam"),
+        "3️⃣": EmojiOption(emoji = "3️⃣", option_str = "Nudity"),
+        "4️⃣": EmojiOption(emoji = "4️⃣", option_str = "Hate Speech"),
+        "5️⃣": EmojiOption(emoji = "5️⃣", option_str = "Bullying and/or Harassment"),
+        "6️⃣": EmojiOption(emoji = "6️⃣", option_str = "Scam or Fraud"),
+        "7️⃣": EmojiOption(emoji = "7️⃣", option_str = "Threats of Violence"),
+        "8️⃣": EmojiOption(emoji = "8️⃣", option_str = "IP Violation"),
+        "9️⃣": EmojiOption(emoji = "9️⃣", option_str = "Self-Harm or Suicide"),
+        "🔟": EmojiOption(emoji = "🔟", option_str = "Something Else")
     },
     State.GENERAL_CATEGORY_IDENTIFIED: {
-        "🔴": EmojiOption(emoji = "🔴", option_str = "Medical Disinformation: Politicizing Medical Response"),
-        "🟠": EmojiOption(emoji = "🟠", option_str = "Medical Disinformation: Treatment") # TODO: add descriptions based on youtube's distinctions https://support.google.com/youtube/answer/9891785?hl=en&ref_topic=10833358&sjid=12927046454796501180-NA
-        # SEE https://emojicombos.com/color for more circle emojis
+        #Should we change these to MISinformation?
+        # Added descriptions based on youtube's distinctions https://support.google.com/youtube/answer/9891785?hl=en&ref_topic=10833358&sjid=12927046454796501180-NA
+        "🔴": EmojiOption(emoji = "🔴", option_str = "Medical Disinformation: Politicizing Medical Response. Content that allows COVID-19 information or news to become political in nature (e.g., using CDC guidelines to criticize a  agendas"),
+        "🟠": EmojiOption(emoji = "🟠", option_str = "Medical Disinformation: Treatment. Content tat encourages the use of home remedies, prayer, or rituals in place of consulting a doctor (e.g., recommends use of Ivermectin or Hydroxychloroquine for prevention of COVID-19)"), 
+        "🟡": EmojiOption(emoji = "🟡", option_str = "Medical Disinformation: Prevention. Content that promotes prevention information that contradicts health authorities (e.g., claiming that COVID-19 vaccines do not reduce risk of serious injury or death"),
+        "🟢": EmojiOption(emoji = "🟢", option_str = "Medical Disinformation: Diagnostic. Content that promotes diagnostic information that contradicts health authorities (e.g., Claims that COVID-19 tests are ineffective/dangerous)"),
+        "🔵": EmojiOption(emoji = "🔵", option_str = "Medical Disinformation: Transmission. Content that provides inaccurate information about transmission (e.g., that COVID-19 is less transmissible than common cold"),
+        "🟣": EmojiOption(emoji = "🟣", option_str = "Medical Disinformation: Denies Existence. Content that denies the existence of COVID-19 (e.g., claiming symptoms of COVID-19 are never severe)"),
+        "⚪": EmojiOption(emoji = "⚪", option_str = "Attacks against health officials, organizations, or the government."),
+        "⚫": EmojiOption(emoji = "⚫", option_str = "Conspiracy Theories (e.g., the COVID-19 vaccine has tracking chips"), #TODO definition here
+        "🟤": EmojiOption(emoji = "🟤", option_str = "Other")
+        # SEE https://emojicombos.com/color for more circle emojis USE THIS!!!!
     },
-    State.DISINFO_CATEGORY_IDENTIFIED: {
+    State.DISINFO_CATEGORY_IDENTIFIED: { #this is severity
         "🟥": EmojiOption(emoji = "🟥", option_str = "Purposefully Confusing / Untrue Content"),
-        "🟧": EmojiOption(emoji = "🟧", option_str = "Misinterpreting/Distorting/Disobeying Official Government Health Orders/Advisories")
+        "🟧": EmojiOption(emoji = "🟧", option_str = "Misinterpreting/Distorting/Disobeying Official Government Health Orders/Advisories"),
+        "🟨": EmojiOption(emoji = "🟨", option_str = "Public Health Risk"),
+        "🟩": EmojiOption(emoji = "🟩", option_str = "Targeted Danger Towards Specific Individual/Group")
     },
     State.ASK_FOR_FEED_MODIFICATIONS: {
-        "🧹":  EmojiOption(emoji = "🟥", option_str = "Remove Post From Feed"),
-    }
+        "🧹": EmojiOption(emoji = "🧹", option_str = "Remove Post From Feed"),
+        "❌": EmojiOption(emoji = "❌", option_str = "Block User"),
+        "💬": EmojiOption(emoji = "💬", option_str = "Temporarily Mute User")
+    }  
 }
 
 DEFAULT_CONTINUE_SYSTEM_MESSAGE_SUFFIX = "Once you're done selecting, please type `continue`. Type `cancel` to cancel the report at any point."
