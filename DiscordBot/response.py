@@ -15,6 +15,7 @@ class State(Enum):
     ASK_FOR_USER_ACTIONS = auto()
     ASK_FOR_GROUP_ACTIONS = auto() 
     ASK_FOR_REASON_FOR_ELEVATING = auto()
+    ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS = auto()
     GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS = auto()
     THANK_MODERATOR = auto()
     RESPONSE_FINISHED = auto()
@@ -25,9 +26,10 @@ STATE_TO_MESSAGE_PREFIX = {
     State.ASK_FOR_POST_ACTIONS: "What actions should be taken on the post?",
     State.ASK_FOR_USER_ACTIONS: "What actions should be taken on the user who created the post?",
     State.ASK_FOR_GROUP_ACTIONS: "What actions should be taken on the group in which the post was made?",
+    State.ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS: "Would you like to flag this report for advanced moderators to review?",
     State.ASK_FOR_REASON_FOR_ELEVATING: "Why should this report be forwarded to advanced moderators?",
     State.THANK_MODERATOR: "Thank you for responding to the report! Begin a new response at any time by typing `respond`",
-    State.GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS: "[ADVANCED MODERATOR REPORT NOTIFICATION]"  # TODO: handle_message will handle generating the report summary for the advanced moderators to act on
+    State.GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS: "[ADVANCED MODERATOR REPORT NOTIFICATION]\n"  # TODO: handle_message will handle generating the report summary for the advanced moderators to act on
 }
 
 # If the state has only one next state to transition into
@@ -35,39 +37,47 @@ STATE_TO_SINGLE_NEXT_STATE =  {
     State.REPORT_IDENTIFIED: State.ASK_FOR_POST_ACTIONS,
     State.ASK_FOR_POST_ACTIONS: State.ASK_FOR_USER_ACTIONS,
     State.ASK_FOR_USER_ACTIONS: State.ASK_FOR_GROUP_ACTIONS,
+    State.ASK_FOR_GROUP_ACTIONS: State.ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS,
     State.ASK_FOR_REASON_FOR_ELEVATING: State.GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS,
 }
 
 DEFAULT_REQUEST_EMOJI_RESPONSE_STR = " React to this message with the emoji corresponding to the correct category / categories.\n"
+<<<<<<< HEAD
 DEFAULT_MODIFY_POST_DISCLAIMER = "WARNING! This message may contain disinformation.\n"
 DEFAULT_NOTFIY_USER_OF_TRANSGESSION = "Dear user, we regret to inform you that your message has been flagged for disinformation. We will investigate your post and take actions accordingly.\n"
 MUTE_TIME_IN_SECONDS = 5
+=======
+>>>>>>> 01c55b14335edaa8593cf4520611793d2be34aac
 
 # see ModeratorAction enum in reactions.py for different actions to assign to emoji options
 STATE_TO_EMOJI_OPTIONS = {
     State.ASK_FOR_POST_ACTIONS: {
         "❌": EmojiOption(emoji = "❌", option_str = "Remove post", action = ModeratorAction.REMOVE_POST, post_action_message = "The reported post has been removed."),
-
     },
     State.ASK_FOR_POST_ACTIONS: {
         "⚠️": EmojiOption(emoji = "⚠️", option_str = "Add disclaimer for users and link reliable resources (ex: CDC, WHO)", post_action_message = "A disclaimer has been added to the post alongside links to reliable sources on COVID-19."),
-
     }, 
     State.ASK_FOR_GROUP_ACTIONS: {
         "1️⃣": EmojiOption(emoji = "1️⃣", option_str = "Notify user of transgression", post_action_message = "The user who created the post has been notified of the transgression."),
 
     },
+    State.ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS: {
+        "👍": EmojiOption(emoji = "👍", option_str = "Yes", post_action_message = "After you complete your response to the report, we will forward the report to advanced moderators."),
+        "👎": EmojiOption(emoji = "👎", option_str = "No"),
+    }
     State.ASK_FOR_REASON_FOR_ELEVATING: {
         "1️⃣": EmojiOption(emoji = "1️⃣", option_str = "Severity of the post"),
 
     }
 }
 
+YES_ELEVATE_TO_ADVANCED_MODERATORS_ACTION = STATE_TO_EMOJI_OPTIONS[State.ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS]["👍"]
+
 DEFAULT_CONTINUE_SYSTEM_MESSAGE_SUFFIX = "Once you're done selecting, please type `continue`. Type `cancel` to cancel the report at any point."
 
 MESSAGE_THEN_CONTINUE = set([])
 
-NO_CONTINUE_STATES = set([State.THANK_MODERATOR])
+NO_CONTINUE_STATES = set([State.THANK_MODERATOR, State.GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS])
 
 class Response:
     START_KEYWORD = "start"
@@ -130,42 +140,65 @@ class Response:
             return [f"Thank you for beginning a response to report number {report_id}!", \
                     "We'll be asking you a few questions to gather your full response to the report. \n" \
                     "Type `continue` to continue the response, and say `cancel` to cancel at any point."]
-        
-        
-
-        # NOTE: FROM HERE ON IN THIS FUNCTION HAS NOT YET BEEN EDITED FOR THE MODERATOR FLOW
-
 
         # START OF OUR CUSTOM REPORTING STATES
         # Next, we progress through our own states that are outlined in our user reporting flow diagram
         if message.content == self.CONTINUE_KEYWORD:
 
             # the moderator has said `continue` after responding to the previous state
-
-            # TODO: take the actions associated with the options the moderator chose in the previous state
-            # must call take_actions at some point
-
             reply_list = []
 
-            # TODO: generate a message to the moderator of a summary of the actions taken
+            # check to see if we are in an emoji-actionable state
+            if self.state in STATE_TO_EMOJI_OPTIONS:
 
+                # take the actions associated with the options the moderator chose in the previous state
+                # get the emoji options selected for the current state
+                current_state_emoji_options = self.moderator_state_to_selected_emoji[self.state]
+                self.take_actions(current_state_emoji_options)
+
+                # special case for flagging for advanced moderator review
+                if self.state == State.ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS and YES_ELEVATE_TO_ADVANCED_MODERATORS_ACTION in current_state_emoji_options:
+                    self.elevate_to_advanced_moderators = True
+
+                # generate a message to the moderator of a summary of the actions taken (if any)
+                if self.state in STATE_TO_EMOJI_OPTIONS and len(current_state_emoji_actions):
+                    post_action_messages = [emoji_action.post_action_message for emoji actions in current_state_emoji_actions if emoji_action.post_action_message]
+                    
+                    if len(post_action_messages):
+                        reply = "We have taken the following actions based on your responses: \n"
+                        for post_action_message in post_action_messages:
+                            reply += f"·    {post_action_message}\n"
+
+                        reply_list.append(reply)
+
+
+            # TRANSITIONS
             # we now progress to the next state
+            # process simple 1-to-1 transitions
             if self.state in STATE_TO_SINGLE_NEXT_STATE:
                 self.state = STATE_TO_SINGLE_NEXT_STATE[self.state]
 
+            # TODO: finish handling advanced transitions here
+            if self.state == State.ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS:
+                self.state = State.GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS if self.elevate_to_advanced_moderators else State.THANK_MODERATOR
+
+            # MESSAGING
             if self.state in MESSAGE_THEN_CONTINUE:
                 reply_list.append(STATE_TO_MESSAGE_PREFIX[self.state])
                 self.state = STATE_TO_SINGLE_NEXT_STATE[self.state]
 
             # start with the message prefix for that state if there is one
             reply = STATE_TO_MESSAGE_PREFIX[self.state] if self.state in STATE_TO_MESSAGE_PREFIX else ""
+        
+            # add a summary of the report thussofar if we are alerting the advanced moderators
+            if self.state == State.GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS:
+                reply += self.generate_summary_for_advanced_moderators()
 
             # state that prompts the user for multiple options
             if self.state in STATE_TO_EMOJI_OPTIONS:
                 reply += DEFAULT_REQUEST_EMOJI_RESPONSE_STR
                 for emoji, emoji_option in STATE_TO_EMOJI_OPTIONS[self.state].items():
                     reply += f"{emoji}: {emoji_option.option_str}\n"
-
 
             if self.state not in NO_CONTINUE_STATES:
                 reply += f"{DEFAULT_CONTINUE_SYSTEM_MESSAGE_SUFFIX}"     
@@ -184,9 +217,16 @@ class Response:
         for action in moderator_actions:
             if action == ModeratorAction.REMOVE_POST:
                 self.remove_reported_post()
-
-            # TODO: finish putting in the if statements for matching ModeratorAction to calling the respective function here
-
+            elif action == ModeratorAction.MODIFY_POST_WITH_DISCLAIMER_AND_RESOURCES:
+                self.modify_post_with_disclaimer_and_reliable_resources()
+            elif action == ModeratorAction.NOTIFY_POSTER_OF_TRANSGRESSION:
+                self.notify_poster_of_transgression()
+            elif action == ModeratorAction.TEMPORARILY_MUTE_USER:
+                self.temporarily_mute_user()
+            elif action == ModeratorAction.PERMANENTLY_REMOVE_USER:
+                self.permanently_remove_user()
+            elif action == ModeratorAction.NOTIFY_GROUP_OF_TRANSGRESSIONS:
+                self.notify_group_of_transgressions()
 
     # TODO
     async def remove_reported_post(self):
