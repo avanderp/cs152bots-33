@@ -48,23 +48,26 @@ MUTE_TIME_IN_SECONDS = 5
 
 # see ModeratorAction enum in reactions.py for different actions to assign to emoji options
 STATE_TO_EMOJI_OPTIONS = {
-    State.ASK_FOR_POST_ACTIONS: {
-        "❌": EmojiOption(emoji = "❌", option_str = "Remove post", action = ModeratorAction.REMOVE_POST, post_action_message = "The reported post has been removed."),
+    State.ASK_FOR_POST_ACTIONS: { 
+        "1️⃣": EmojiOption(emoji = "1️⃣", option_str = "Remove post", action = ModeratorAction.REMOVE_POST, post_action_message = "The reported post has been removed."),
+        "2️⃣": EmojiOption(emoji = "2️⃣", option_str = "Temporarily mute account", action = ModeratorAction.TEMPORARILY_MUTE_USER, post_action_message = "The poster's account has been temporarily muted")
     },
-    State.ASK_FOR_USER_ACTIONS: {
-        "⚠️": EmojiOption(emoji = "⚠️", option_str = "Add disclaimer for users and link reliable resources (ex: CDC, WHO)", post_action_message = "A disclaimer has been added to the post alongside links to reliable sources on COVID-19."),
+    State.ASK_FOR_USER_ACTIONS: { 
+        "1️⃣": EmojiOption(emoji = "1️⃣", option_str = "Add disclaimer for users and link reliable resources (ex: CDC, WHO)",  action = ModeratorAction.MODIFY_POST_WITH_DISCLAIMER_AND_RESOURCES, post_action_message = "A disclaimer has been added to the post alongside links to reliable sources on COVID-19."),
+        "2️⃣": EmojiOption(emoji = "2️⃣", option_str = "Remove post", action = ModeratorAction.REMOVE_POST, post_action_message = "The post has been removed.")
     }, 
-    State.ASK_FOR_GROUP_ACTIONS: {
-        "1️⃣": EmojiOption(emoji = "1️⃣", option_str = "Notify user of transgression", post_action_message = "The user who created the post has been notified of the transgression."),
-
+    State.ASK_FOR_GROUP_ACTIONS: { 
+        "1️⃣": EmojiOption(emoji = "1️⃣", option_str = "Notify user of transgression", action = ModeratorAction.NOTIFY_GROUP_OF_TRANSGRESSIONS, post_action_message = "The user who created the post has been notified of the transgression."),
+        "2️⃣": EmojiOption(emoji = "2️⃣", option_str = "Temporarily mute or block", action = ModeratorAction.TEMPORARILY_MUTE_USER, post_action_message = "The user who created the post has been temporarily muted or blocked."),
+        "3️⃣": EmojiOption(emoji = "3️⃣", option_str = "Remove user permanently", action = ModeratorAction.PERMANENTLY_REMOVE_USER, post_action_message = "The user who created the post has been permanently removed.")
     },
     State.ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS: {
         "👍": EmojiOption(emoji = "👍", option_str = "Yes", post_action_message = "After you complete your response to the report, we will forward the report to advanced moderators."),
-        "👎": EmojiOption(emoji = "👎", option_str = "No"),
+        "👎": EmojiOption(emoji = "👎", option_str = "No")
     },
-    State.ASK_FOR_REASON_FOR_ELEVATING: {
+    State.ASK_FOR_REASON_FOR_ELEVATING: { 
         "1️⃣": EmojiOption(emoji = "1️⃣", option_str = "Severity of the post"),
-
+        "2️⃣": EmojiOption(emoji = "2️⃣", option_str = "High Profile user (wider reach)")
     }
 }
 
@@ -130,6 +133,7 @@ class Response:
             # use the client mapping from report id to report to get discord's Message object of the reported message
             self.report_id = report_id
             self.report = self.client.report_id_to_report[report_id]
+            print("self.client.report_id_to_report.keys()[0]", type(list(self.client.report_id_to_report.keys())[0]), self.client.report_id_to_report, "report_id ",type(report_id), report_id,"self.client.report_id_to_report[report_id]",type(self.client.report_id_to_report[report_id]) ,self.client.report_id_to_report[report_id])
             self.reported_message = self.client.report_id_to_report[report_id].message
             # Here we've found the message - it's up to you to decide what to do next!
             self.state = State.REPORT_IDENTIFIED
@@ -209,21 +213,22 @@ class Response:
 
         return []
 
-    async def take_actions(self, moderator_actions: Set[ModeratorAction]):
-        print("in take_actions", [action for action in moderator_actions])
-        for action in moderator_actions:
-            if action == ModeratorAction.REMOVE_POST:
-                self.remove_reported_post()
-            elif action == ModeratorAction.MODIFY_POST_WITH_DISCLAIMER_AND_RESOURCES:
-                self.modify_post_with_disclaimer_and_reliable_resources()
-            elif action == ModeratorAction.NOTIFY_POSTER_OF_TRANSGRESSION:
-                self.notify_poster_of_transgression()
-            elif action == ModeratorAction.TEMPORARILY_MUTE_USER:
-                self.temporarily_mute_user()
-            elif action == ModeratorAction.PERMANENTLY_REMOVE_USER:
-                self.permanently_remove_user()
-            elif action == ModeratorAction.NOTIFY_GROUP_OF_TRANSGRESSIONS:
-                self.notify_group_of_transgressions()
+    async def take_actions(self, moderator_emojis: Set[ModeratorAction]):
+        print("in take_actions", [action for action in moderator_emojis])
+        for emoji in moderator_emojis:
+            if emoji.action == ModeratorAction.REMOVE_POST:
+                print("about to remove_post")
+                await self.remove_reported_post()
+            elif emoji.action == ModeratorAction.MODIFY_POST_WITH_DISCLAIMER_AND_RESOURCES:
+                await self.modify_post_with_disclaimer_and_reliable_resources()
+            elif emoji.action == ModeratorAction.NOTIFY_POSTER_OF_TRANSGRESSION:
+                await self.notify_poster_of_transgression()
+            elif emoji.action == ModeratorAction.TEMPORARILY_MUTE_USER:
+                await self.temporarily_mute_user()
+            elif emoji.action == ModeratorAction.PERMANENTLY_REMOVE_USER:
+                await self.permanently_remove_user()
+            elif emoji.action == ModeratorAction.NOTIFY_GROUP_OF_TRANSGRESSIONS:
+                await self.notify_group_of_transgressions()
 
     # TODO
     async def remove_reported_post(self):
