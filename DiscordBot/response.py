@@ -1,4 +1,5 @@
 # file for implementing the class representing a moderator response
+import asyncio
 from enum import Enum, auto
 import discord
 import re
@@ -41,6 +42,12 @@ STATE_TO_SINGLE_NEXT_STATE =  {
 }
 
 DEFAULT_REQUEST_EMOJI_RESPONSE_STR = " React to this message with the emoji corresponding to the correct category / categories.\n"
+<<<<<<< HEAD
+DEFAULT_MODIFY_POST_DISCLAIMER = "WARNING! This message may contain disinformation.\n"
+DEFAULT_NOTFIY_USER_OF_TRANSGESSION = "Dear user, we regret to inform you that your message has been flagged for disinformation. We will investigate your post and take actions accordingly.\n"
+MUTE_TIME_IN_SECONDS = 5
+=======
+>>>>>>> 01c55b14335edaa8593cf4520611793d2be34aac
 
 # see ModeratorAction enum in reactions.py for different actions to assign to emoji options
 STATE_TO_EMOJI_OPTIONS = {
@@ -128,7 +135,6 @@ class Response:
 
             self.report = self.client.report_id_to_report[report_id]
             self.reported_message = self.client.report_id_to_report[report_id].message
-
             # Here we've found the message - it's up to you to decide what to do next!
             self.state = State.REPORT_IDENTIFIED
             return [f"Thank you for beginning a response to report number {report_id}!", \
@@ -225,34 +231,43 @@ class Response:
     # TODO
     async def remove_reported_post(self):
         # use the discord py Message object stored in self.reported_message to get the info necessary to remove the reported message
-        raise NotImplementedError()
+        await self.reported_message.delete()
 
     # TODO
     async def modify_post_with_disclaimer_and_reliable_resources(self):
-        raise NotImplementedError()
+        new_content = DEFAULT_MODIFY_POST_DISCLAIMER + self.reported_message.content
+        await self.reported_message.edit(content=new_content)
 
     # TODO
     async def notify_poster_of_transgression(self):
         # notify user of transgression
         # state which post in which channel was the reason
-        raise NotImplementedError()
+        notify_message = DEFAULT_NOTFIY_USER_OF_TRANSGESSION + \
+                            "The following post: \n" +\
+                            self.reported_message.content + \
+                            "Was reported in the following channel: {}\n".format(self.reported_message.guild.name)
+        await self.reported_message.author.send(content=notify_message)
 
     # TODO
     async def temporarily_mute_user(self):
         # see https://stackoverflow.com/questions/62436615/how-do-i-temp-mute-someone-using-discord-py#:~:text=mute%20command%20so%20it's%20possible,and%20y%20is%20for%20years.
         # make sure to message the user when they have been muted/unmuted
-        raise NotImplementedError()
+         await self.client.mod_channels[self.reported_message.guild.id].send("{} has been muted!\n" .format(self.reported_message.author.mention))
+         await asyncio.sleep(MUTE_TIME_IN_SECONDS)
+         await self.client.mod_channels[self.reported_message.guild.id].send("{} has been unmuted!\n" .format(self.reported_message.author.mention))
 
     # TODO
     async def permanently_remove_user(self):
         # since we don't actually want to remove any users, send a message to the channel saying "user {user_name} has been removed from this channel!"
         # make sure to message the user when they have been removed
-        raise NotImplementedError()
-
+        await self.client.mod_channels[self.reported_message.guild.id].send("User {} has been removed from this channel!\n" .format(self.reported_message.author.mention))
+        await self.reported_message.author.send(content="We regret to inform you that you've been removed from our social network!")
+    
     # TODO
     async def notify_group_of_transgressions(self):
         # Notify users in group or joining group about the high volume of misinformation
-        raise NotImplementedError()
+        await self.client.mod_channels[self.reported_message.guild.id].send("Dear users of group-{}, we regret to inform you that this group has been found to have high volume of misinformation content\n\
+                                                                            please be advised!\n".format(self.client.group_num))
 
 
     async def handle_reaction(self, message, emoji, user):
