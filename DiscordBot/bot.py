@@ -48,6 +48,7 @@ class ModBot(discord.Client):
         self.report_id_to_report = {} # Map from report IDs to the Report class instance
         self.next_report_id = 0
         self.next_moderator_response_id = 0
+        self.user_id_to_number_of_removed_posts = defaultdict(int) # Map from user IDs to the number of the user's report that the ModBot has removed (default 0)
 
     async def on_ready(self):
         print(f'{self.user.name} has connected to Discord! It is these guilds:')

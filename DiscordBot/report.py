@@ -71,7 +71,7 @@ STATE_TO_EMOJI_OPTIONS = {
 
 DEFAULT_CONTINUE_SYSTEM_MESSAGE_SUFFIX = "Once you're done selecting, please type `continue`. Type `cancel` to cancel the report at any point."
 
-MESSAGE_ONLY_STATES = set([State.SEVERITY_IDENTIFIED_CONFUSING, State.SEVERITY_IDENTIFIED_OTHER])
+MESSAGE_THEN_CONTINUE = set([State.SEVERITY_IDENTIFIED_CONFUSING, State.SEVERITY_IDENTIFIED_OTHER])
 
 NO_CONTINUE_STATES = set([State.THANK_FOR_REPORTING])
 
@@ -142,9 +142,11 @@ class Report:
             if self.state in STATE_TO_SINGLE_NEXT_STATE:
                 self.state = STATE_TO_SINGLE_NEXT_STATE[self.state]
 
+            # TODO: add logic for non 1-to-1 transitions
+
             reply_list = []
 
-            if self.state in MESSAGE_ONLY_STATES:
+            if self.state in MESSAGE_THEN_CONTINUE:
                 reply_list.append(STATE_TO_MESSAGE_PREFIX[self.state])
                 self.state = STATE_TO_SINGLE_NEXT_STATE[self.state]
 
