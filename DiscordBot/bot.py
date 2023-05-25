@@ -40,6 +40,7 @@ class ModBot(discord.Client):
         intents = discord.Intents.default()
         intents.messages = True
         intents.reactions = True
+        intents.message_content = True # Added 
         intents.dm_reactions = True
         intents.guild_reactions = True
         super().__init__(command_prefix='.', intents=intents, max_messages = 1000)
@@ -203,7 +204,6 @@ class ModBot(discord.Client):
 
     
     async def handle_moderator_channel_message(self, message):
-        print("In handle_moderator_channel_message")
         # Handle a help message
         if message.content == Response.HELP_KEYWORD:
             reply =  "Use the `start` command to begin the reporting process.\n"
@@ -221,7 +221,6 @@ class ModBot(discord.Client):
         
         # If we don't currently have an active report response for this moderator, add one
         if moderator_id not in self.moderator_responses:
-            print("Creating a new report!")
             self.moderator_responses[moderator_id] = Response(self)  # our bot is the client
 
         # Let the report class handle this message; forward all the messages it returns to uss
@@ -230,12 +229,12 @@ class ModBot(discord.Client):
             await message.channel.send(r)
 
         # If the report is cancelled, remove it from our map
-        if self.moderator_responses[moderator_id].report_cancelled():
+        if self.moderator_responses[moderator_id].response_cancelled():
             self.moderator_responses.pop(moderator_id)
         
         # NOTE: we may not need this next portion
         # If the report is finished, initiate the moderator reporting flow
-        if self.moderator_responses[moderator_id].report_finished():
+        if self.moderator_responses[moderator_id].response_finished():
             pass
 
 

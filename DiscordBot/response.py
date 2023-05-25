@@ -112,7 +112,7 @@ class Response:
             self.state = State.RESPONSE_CANCELLED
             return ["Report response cancelled."]
         
-        if self.state == State.REPORT_START:
+        if self.state == State.RESPONSE_START:
             reply =  "Thank you for responding to report. "
             reply += "Say `help` at any time for more information.\n\n"
             reply += "Please type the ID number of the report you would like to respond to.\n"
@@ -121,15 +121,14 @@ class Response:
         
         if self.state == State.AWAITING_MESSAGE:
             # Parse out the three ID strings from the message link
-            m = re.search(REPORT_ID_REGEX, message.content)
+            m = re.search(self.REPORT_ID_REGEX, message.content)
             if not m:
                 return ["I'm sorry, I couldn't read the report number. Please try again or say `cancel` to cancel."]
 
-            report_id = m.group()
+            report_id = int(m.group())
 
             # use the client mapping from report id to report to get discord's Message object of the reported message
             self.report_id = report_id
-
             self.report = self.client.report_id_to_report[report_id]
             self.reported_message = self.client.report_id_to_report[report_id].message
             # Here we've found the message - it's up to you to decide what to do next!
@@ -151,15 +150,15 @@ class Response:
                 # take the actions associated with the options the moderator chose in the previous state
                 # get the emoji options selected for the current state
                 current_state_emoji_options = self.moderator_state_to_selected_emoji[self.state]
-                self.take_actions(current_state_emoji_options)
+                await self.take_actions(current_state_emoji_options)
 
                 # special case for flagging for advanced moderator review
                 if self.state == State.ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS and YES_ELEVATE_TO_ADVANCED_MODERATORS_ACTION in current_state_emoji_options:
                     self.elevate_to_advanced_moderators = True
 
                 # generate a message to the moderator of a summary of the actions taken (if any)
-                if self.state in STATE_TO_EMOJI_OPTIONS and len(current_state_emoji_actions):
-                    post_action_messages = [emoji_action.post_action_message for emoji_action in current_state_emoji_actions if emoji_action.post_action_message]
+                if self.state in STATE_TO_EMOJI_OPTIONS and len(current_state_emoji_options):
+                    post_action_messages = [emoji_action.post_action_message for emoji_action in current_state_emoji_options if emoji_action.post_action_message]
                     
                     if len(post_action_messages):
                         reply = "We have taken the following actions based on your responses: \n"
@@ -210,7 +209,8 @@ class Response:
 
         return []
 
-    async def take_actions(moderator_actions: Set[ModeratorAction]):
+    async def take_actions(self, moderator_actions: Set[ModeratorAction]):
+        print("in take_actions", [action for action in moderator_actions])
         for action in moderator_actions:
             if action == ModeratorAction.REMOVE_POST:
                 self.remove_reported_post()
@@ -228,6 +228,7 @@ class Response:
     # TODO
     async def remove_reported_post(self):
         # use the discord py Message object stored in self.reported_message to get the info necessary to remove the reported message
+        print("Trying to delete the message.")
         await self.reported_message.delete()
 
     # TODO
@@ -290,7 +291,11 @@ class Response:
         
         return "Placeholder summary for advanced moderators."
 
+    def response_cancelled(self):
+        return self.state == State.RESPONSE_CANCELLED 
 
+    def response_finished(self):
+        return self.state == State.RESPONSE_FINISHED
 
 
 
