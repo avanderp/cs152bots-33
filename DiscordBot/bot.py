@@ -99,7 +99,7 @@ class ModBot(discord.Client):
 
         # TODO: first check that the reaction is in the group-33-mod
         if message.channel.name != f'group-{self.group_num}-mod':
-            continue
+            return
 
         # Let the moderator Response class handle this message; forward all the reactions to the responses
         responses = await self.moderator_responses[moderator_id].handle_reaction(message, emoji, user)
@@ -183,13 +183,17 @@ class ModBot(discord.Client):
 
             
 
-    async def handle_channel_message(self, message):
+    async def handle_channel_message(self, message):  
         # Only handle messages sent in the "group-#" channel
-        if not message.channel.name == f'group-{self.group_num}':
+        if message.channel.name == f'group-{self.group_num}':
+            # pass along to the automated flagging logics
+
+            # TODO: check if the normal channel message has a AUTO_FLAG keyword
+            # if so, create a "automatically flagged report" and send to moderator channel
             return
 
-        if message.channel.name == f'group-{self.group_num}-mod':
-            self.handle_moderator_channel_message(message)
+        if str(message.channel.name) == f"group-{self.group_num}-mod":
+            await self.handle_moderator_channel_message(message)
 
         # Forward the message to the mod channel
         # mod_channel = self.mod_channels[message.guild.id]
@@ -199,6 +203,7 @@ class ModBot(discord.Client):
 
     
     async def handle_moderator_channel_message(self, message):
+        print("In handle_moderator_channel_message")
         # Handle a help message
         if message.content == Response.HELP_KEYWORD:
             reply =  "Use the `start` command to begin the reporting process.\n"
@@ -213,8 +218,10 @@ class ModBot(discord.Client):
         if moderator_id not in self.moderator_responses and not message.content.startswith(Response.START_KEYWORD):
             return
 
+        
         # If we don't currently have an active report response for this moderator, add one
         if moderator_id not in self.moderator_responses:
+            print("Creating a new report!")
             self.moderator_responses[moderator_id] = Response(self)  # our bot is the client
 
         # Let the report class handle this message; forward all the messages it returns to uss

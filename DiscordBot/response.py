@@ -42,12 +42,9 @@ STATE_TO_SINGLE_NEXT_STATE =  {
 }
 
 DEFAULT_REQUEST_EMOJI_RESPONSE_STR = " React to this message with the emoji corresponding to the correct category / categories.\n"
-<<<<<<< HEAD
 DEFAULT_MODIFY_POST_DISCLAIMER = "WARNING! This message may contain disinformation.\n"
 DEFAULT_NOTFIY_USER_OF_TRANSGESSION = "Dear user, we regret to inform you that your message has been flagged for disinformation. We will investigate your post and take actions accordingly.\n"
 MUTE_TIME_IN_SECONDS = 5
-=======
->>>>>>> 01c55b14335edaa8593cf4520611793d2be34aac
 
 # see ModeratorAction enum in reactions.py for different actions to assign to emoji options
 STATE_TO_EMOJI_OPTIONS = {
@@ -64,7 +61,7 @@ STATE_TO_EMOJI_OPTIONS = {
     State.ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS: {
         "👍": EmojiOption(emoji = "👍", option_str = "Yes", post_action_message = "After you complete your response to the report, we will forward the report to advanced moderators."),
         "👎": EmojiOption(emoji = "👎", option_str = "No"),
-    }
+    },
     State.ASK_FOR_REASON_FOR_ELEVATING: {
         "1️⃣": EmojiOption(emoji = "1️⃣", option_str = "Severity of the post"),
 
@@ -162,7 +159,7 @@ class Response:
 
                 # generate a message to the moderator of a summary of the actions taken (if any)
                 if self.state in STATE_TO_EMOJI_OPTIONS and len(current_state_emoji_actions):
-                    post_action_messages = [emoji_action.post_action_message for emoji actions in current_state_emoji_actions if emoji_action.post_action_message]
+                    post_action_messages = [emoji_action.post_action_message for emoji_action in current_state_emoji_actions if emoji_action.post_action_message]
                     
                     if len(post_action_messages):
                         reply = "We have taken the following actions based on your responses: \n"
