@@ -189,8 +189,7 @@ class ModBot(discord.Client):
         if not message.channel.name == f'group-{self.group_num}':
             return
 
-        # TODO: if a message is sent within the group-33-mod channel, write a function here, similar to handle_dm, that can handle a moderator message (entrypoint to moderator reporting flow)
-
+        # TODO: if a message is sent within the group-33-mod channel, write functionality here, similar to handle_dm, that can handle a moderator message (entrypoint to moderator reporting flow)
 
         # Forward the message to the mod channel
         mod_channel = self.mod_channels[message.guild.id]
