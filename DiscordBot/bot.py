@@ -72,21 +72,7 @@ class ModBot(discord.Client):
                     self.mod_channels[guild.id] = channel
 
                     if self.group_num == PERSONAL_GROUP_NUMBER_STR:
-                        self.personal_mod_channel = channel
-
-    # async def on_reaction_add(self, reaction, user):
-    #     '''
-    #     This function is called whenever a reaction is added to a message in a channel that the bot can see (including DMs). 
-    #     Currently the bot is configured to only handle reactions that are sent over DMs or in your group's "group-#" channel. 
-    #     '''
-
-    #     print(f"We've entered on_reaction_add.")
-
-    #     # Check if this message was sent in a server ("guild") or if it's a DM
-    #     if reaction.message.guild:
-    #         await self.handle_channel_reaction(message, reaction, user)
-    #     else:
-    #         await self.handle_dm_reaction(message, reaction, user)   
+                        self.personal_mod_channel = channel   
 
     async def on_raw_reaction_add(self, payload):
         print(f"We've entered on_raw_reaction_add.")  
