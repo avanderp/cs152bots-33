@@ -3,9 +3,8 @@
 from enum import Enum, auto
 import discord
 import re
-from reactions import EmojiOption
+from reactions import EmojiOption, ModeratorAction
 from collections import defaultdict
-
 
 class State(Enum):
     RESPONSE_START = auto()
@@ -42,11 +41,10 @@ DEFAULT_REQUEST_EMOJI_RESPONSE_STR = " React to this message with the emoji corr
 
 
 
-
+# see ModeratorAction enum in reactions.py for different actions to assign to emoji options
 STATE_TO_EMOJI_OPTIONS = {
     State.ASK_FOR_POST_ACTIONS: {
-        # TODO: fill in the "action" component to indicate we'll want to call the Response class's remove_reported_post function
-        "❌": EmojiOption(emoji = "❌", option_str = "Remove post", post_action_message = "The reported post has been removed."),
+        "❌": EmojiOption(emoji = "❌", option_str = "Remove post", action = ModeratorAction.REMOVE_POST, post_action_message = "The reported post has been removed."),
 
     },
     State.ASK_FOR_POST_ACTIONS: {
@@ -142,7 +140,9 @@ class Response:
         if message.content == self.CONTINUE_KEYWORD:
 
             # the moderator has said `continue` after responding to the previous state
+
             # TODO: take the actions associated with the options the moderator chose in the previous state
+            # must call take_actions at some point
 
             reply_list = []
 
@@ -178,6 +178,13 @@ class Response:
             return reply_list
 
         return []
+
+    async def take_actions(moderator_actions: Set[ModeratorAction]):
+        for action in moderator_actions:
+            if action == ModeratorAction.REMOVE_POST:
+                self.remove_reported_post()
+
+            # TODO: finish putting in the if statements for matching ModeratorAction to calling the respective function here
 
 
     # TODO
