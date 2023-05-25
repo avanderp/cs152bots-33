@@ -94,6 +94,18 @@ class ModBot(discord.Client):
             await self.handle_dm_reaction(message, emoji, user)  
 
 
+    async def handle_channel_reaction(self, message, emoji, user):
+        moderator_id = user.id
+
+        # TODO: first check that the reaction is in the group-33-mod
+        if message.channel.name != f'group-{self.group_num}-mod':
+            continue
+
+        # Let the moderator Response class handle this message; forward all the reactions to the responses
+        responses = await self.moderator_responses[moderator_id].handle_reaction(message, emoji, user)
+        for r in responses:
+            await message.channel.send(r)
+
 
     async def handle_dm_reaction(self, message, emoji, user):
         print(f"We've entered handle_dm_reaction.")
@@ -101,14 +113,13 @@ class ModBot(discord.Client):
         # Get the id of the person the Bot sent the react-request message to (the user who reported)
         report_author_id = user.id
 
-        # If we don't currently have an active report for this user, add one
+        # If we don't currently have an active report for this user
         if report_author_id not in self.reports:
-            reply =  "You do not have any currently active reports. Please start a new report.\n"
-            await message.channel.send(reply) 
-            return 
+            # reply =  "You do not have any currently active reports. Please start a new report by typing `report`.\n"
+            # await message.channel.send(reply) 
+            return
 
-
-        # Let the report class handle this message; forward all the messages it returns to uss
+        # Let the report class handle this message; forward all the reactions to the report
         responses = await self.reports[report_author_id].handle_reaction(message, emoji, user)
         for r in responses:
             await message.channel.send(r)
@@ -177,13 +188,14 @@ class ModBot(discord.Client):
         if not message.channel.name == f'group-{self.group_num}':
             return
 
-        # TODO: if a message is sent within the group-33-mod channel, write functionality here, similar to handle_dm, that can handle a moderator message (entrypoint to moderator reporting flow)
+        if message.channel.name == f'group-{self.group_num}-mod':
+            self.handle_moderator_channel_message(message)
 
         # Forward the message to the mod channel
-        mod_channel = self.mod_channels[message.guild.id]
-        await mod_channel.send(f'Forwarded message:\n{message.author.name}: "{message.content}"')
-        scores = self.eval_text(message.content)
-        await mod_channel.send(self.code_format(scores))
+        # mod_channel = self.mod_channels[message.guild.id]
+        # await mod_channel.send(f'Forwarded message:\n{message.author.name}: "{message.content}"')
+        # scores = self.eval_text(message.content)
+        # await mod_channel.send(self.code_format(scores))
 
     
     async def handle_moderator_channel_message(self, message):
@@ -217,11 +229,7 @@ class ModBot(discord.Client):
         # NOTE: we may not need this next portion
         # If the report is finished, initiate the moderator reporting flow
         if self.moderator_responses[moderator_id].report_finished():
-            # Send the report summary to the moderator
-            response_summary = self.moderator_responses[moderator_id].generate_summary()
-            self.next_moderator_response_id += 1
-
-            await self.personal_mod_channel.send(response_summarys)
+            pass
 
 
     def eval_text(self, message):

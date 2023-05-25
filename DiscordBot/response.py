@@ -47,7 +47,7 @@ STATE_TO_EMOJI_OPTIONS = {
     State.ASK_FOR_POST_ACTIONS: {
         "❌": EmojiOption(emoji = "❌", option_str = "Remove post", action = ModeratorAction.REMOVE_POST, post_action_message = "The reported post has been removed."),
     },
-    State.ASK_FOR_POST_ACTIONS: {
+    State.ASK_FOR_USER_ACTIONS: {
         "⚠️": EmojiOption(emoji = "⚠️", option_str = "Add disclaimer for users and link reliable resources (ex: CDC, WHO)", post_action_message = "A disclaimer has been added to the post alongside links to reliable sources on COVID-19."),
     }, 
     State.ASK_FOR_GROUP_ACTIONS: {
