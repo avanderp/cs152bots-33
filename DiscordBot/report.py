@@ -266,9 +266,14 @@ class Report:
 
 
     def update_actions(self, current_state_emoji_options):
-        # generate a message to the user of actions that will be taken
+
+        # generate a message to the user of actions that will be taken and respond to actions
         if self.state in STATE_TO_EMOJI_OPTIONS and len(current_state_emoji_options):
             actions = [emoji_option.action for emoji_option in current_state_emoji_options if emoji_option.action]
+
+            for action in actions:
+                if action == ModeratorAction.MUTE_POSTER_TO_REPORTER:
+                    self.client.note_in_channel_mute_poster_to_reporter() # TODO: pass in parameters
 
             if len(actions):
                 reply = "We have taken the following actions based on your responses: \n"

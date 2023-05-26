@@ -305,6 +305,9 @@ class ModBot(discord.Client):
          await asyncio.sleep(MUTE_TIME_IN_SECONDS)
          await message.channel.send("{} has been unmuted!\n" .format(message.author.mention))
 
+    async def note_in_channel_mute_poster_to_reporter(self, poster, reporter):
+        pass
+
     async def permanently_remove_user(self, message):
         # since we don't actually want to remove any users, send a message to the channel saying "user {user_name} has been removed from this channel!"
         # make sure to message the user when they have been removed
