@@ -8,6 +8,7 @@ class ModeratorAction(Enum):
     TEMPORARILY_MUTE_USER = auto()
     PERMANENTLY_REMOVE_USER = auto()
     NOTIFY_GROUP_OF_TRANSGRESSIONS = auto()
+    INCREMENT_GROUP_TRANSGRESSION_COUNTER = auto()
 
 class EmojiOption:
     def __init__(self, emoji: str, option_str: str = None, action: ModeratorAction = None, post_action_message: str = None):
