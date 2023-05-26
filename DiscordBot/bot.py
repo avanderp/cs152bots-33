@@ -273,6 +273,8 @@ class ModBot(discord.Client):
         # If the report is finished, update the count of the poster's reported messages
         if self.moderator_responses[moderator_id].response_finished():
             self.user_id_to_number_of_reported_posts[self.moderator_responses[moderator_id].reported_message.author.id] += 1
+            self.moderator_responses.pop(moderator_id)
+            return
 
     async def remove_reported_post(self, message):
         # use the discord py Message object stored in self.reported_message to get the info necessary to remove the reported message
