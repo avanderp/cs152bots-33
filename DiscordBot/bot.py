@@ -49,7 +49,7 @@ class ModBot(discord.Client):
         intents = discord.Intents.default()
         intents.messages = True
         intents.reactions = True
-        intents.message_content = True # Added # NOTE: Abi has to comment this out for her implementation
+        #intents.message_content = True # Added # NOTE: Abi has to comment this out for her implementation
         intents.dm_reactions = True
         intents.guild_reactions = True
         super().__init__(command_prefix='.', intents=intents, max_messages = 1000)
@@ -61,7 +61,7 @@ class ModBot(discord.Client):
         self.next_report_id = 0
         self.next_moderator_response_id = 0
         self.user_id_to_number_of_reported_posts = defaultdict(int) # Map from user IDs to the number of the user's report that the ModBot has removed (default 0)
-        self.channel_id_to_moderator_flag_count = defaultdict(int)  # TODO: create a function corresponding to INCREMENT_GROUP_TRANSGRESSION_COUNTER to update this
+        self.channel_id_to_moderator_flag_count = defaultdict(int)
         self.personal_mod_channel = None
 
     async def on_ready(self):
@@ -87,10 +87,7 @@ class ModBot(discord.Client):
                         self.personal_mod_channel = channel   
 
     async def on_raw_reaction_add(self, payload):
-        print(f"We've entered on_raw_reaction_add.")  
-
         # extract the contents of the reaction and metadata; see https://stackoverflow.com/questions/59854340/how-do-i-use-on-raw-reaction-add-in-discord-py 
-        print(f"Extracting the contents of the reaction payload.")
         channel = self.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         user = self.get_user(payload.user_id)
@@ -179,6 +176,7 @@ class ModBot(discord.Client):
         # If the report is cancelled, remove it from our map
         if self.reports[author_id].report_cancelled():
             self.reports.pop(author_id)
+            return
         
         # If the report is finished, initiate the moderator reporting flow
         if self.reports[author_id].report_finished():
@@ -192,7 +190,6 @@ class ModBot(discord.Client):
             self.next_report_id += 1
 
             await self.personal_mod_channel.send(report_summary)
-
             
 
     async def handle_channel_message(self, message):  
@@ -207,9 +204,6 @@ class ModBot(discord.Client):
             await self.handle_moderator_channel_message(message)
 
 
-
-
-    # TODO
     async def automated_message_flagging(self, message):
         # check to see if the message fits our placeholder template for messages to be auto-flagged from the regular channel
 
@@ -220,9 +214,9 @@ class ModBot(discord.Client):
             # don't do anything with the message
             return
 
-
         disinfo_prob = float(message.content[message.content.rindex(self.DISINFO_PROB_PREFIX_CHAR)+1:])
-        print(f"The disinfo probability of the regular channel message is {disinfo_prob}.")
+        print(f"The disinfo prob is {disinfo_prob}")
+        print(disinfo_prob > self.VERY_HIGH_DISINFO_PROB_THRESHOLD)
 
         # first check if it passes the moderate disinfo threshold to create an automated report
         if disinfo_prob < self.MODERATE_DISINFO_PROB_THRESHOLD:
@@ -232,7 +226,7 @@ class ModBot(discord.Client):
         # create an automated report for this post
         new_automated_report = AutomatedReport(client=self, disinfo_prob = disinfo_prob, 
                                                 message = message,
-                                                automated_report_id = self.next_report_id,
+                                                report_id = self.next_report_id,
                                                 very_high_disinfo_prob = disinfo_prob > self.VERY_HIGH_DISINFO_PROB_THRESHOLD)
         self.report_id_to_report[self.next_report_id] = new_automated_report
 
@@ -241,6 +235,7 @@ class ModBot(discord.Client):
 
         # if the automated report has a very high disinfo probability, take the relevant actions
         if new_automated_report.very_high_disinfo_prob:
+            print("Acting on very high disinfo probability message!")
             await new_automated_report.act_on_very_high_disinfo_message()
 
         # send the summary of the automatically generated report to the moderator channel
@@ -276,18 +271,16 @@ class ModBot(discord.Client):
         # If the report is cancelled, remove it from our map
         if self.moderator_responses[moderator_id].response_cancelled():
             self.moderator_responses.pop(moderator_id)
+            return
         
         # If the report is finished, update the count of the poster's reported messages
         if self.moderator_responses[moderator_id].response_finished():
             self.user_id_to_number_of_reported_posts[self.moderator_responses[moderator_id].reported_message.author.id] += 1
-            pass
 
-    # TODO
     async def remove_reported_post(self, message):
         # use the discord py Message object stored in self.reported_message to get the info necessary to remove the reported message
         await message.delete()
 
-    # TODO
     async def modify_post_with_disclaimer_and_reliable_resources(self, message):
         responses = [DEFAULT_MODIFY_POST_DISCLAIMER,\
             "Message sent by:"+ "```" + message.author.name + ": " + message.content + "```",\
@@ -295,7 +288,6 @@ class ModBot(discord.Client):
         for r in responses:
             await message.channel.send(r)
 
-    # TODO
     async def notify_poster_of_transgression(self, message):
         # notify user of transgression
         # state which post in which channel was the reason
@@ -306,7 +298,6 @@ class ModBot(discord.Client):
         for r in responses:
             await message.author.send(content=r)
 
-    # TODO
     async def temporarily_mute_user(self, message):
         # see https://stackoverflow.com/questions/62436615/how-do-i-temp-mute-someone-using-discord-py#:~:text=mute%20command%20so%20it's%20possible,and%20y%20is%20for%20years.
         # make sure to message the user when they have been muted/unmuted
@@ -314,14 +305,12 @@ class ModBot(discord.Client):
          await asyncio.sleep(MUTE_TIME_IN_SECONDS)
          await message.channel.send("{} has been unmuted!\n" .format(message.author.mention))
 
-    # TODO
     async def permanently_remove_user(self, message):
         # since we don't actually want to remove any users, send a message to the channel saying "user {user_name} has been removed from this channel!"
         # make sure to message the user when they have been removed
         await message.channel.send("User {} has been removed from this channel!\n" .format(message.author.mention))
         await message.author.send(content="We regret to inform you that you've been removed from our social network!")
     
-    # TODO
     async def notify_group_of_transgressions(self, message):
         # Notify users in group or joining group about the high volume of misinformation
         await message.channel.send("Dear users of group-{}, we regret to inform you that this group has been found to have high volume of misinformation content, please be advised!\n".format(self.group_num))
@@ -329,10 +318,16 @@ class ModBot(discord.Client):
     async def increment_group_transgression_counter(self, message):
         self.channel_id_to_moderator_flag_count[message.channel.id] += 1
 
+    # TODO
+    def generate_message_metadata_summary(self, message):
+
+        return "Placeholder metadata summary for the message!"
+
+
 
     def eval_text(self, message):
         ''''
-        TODO: Once you know how you want to evaluate messages in your channel, 
+        Once you know how you want to evaluate messages in your channel, 
         insert your code here! This will primarily be used in Milestone 3. 
         '''
         return message
@@ -340,7 +335,7 @@ class ModBot(discord.Client):
     
     def code_format(self, text):
         ''''
-        TODO: Once you know how you want to show that a message has been 
+        Once you know how you want to show that a message has been 
         evaluated, insert your code here for formatting the string to be 
         shown in the mod channel. 
         '''
