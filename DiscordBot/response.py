@@ -275,6 +275,9 @@ class Response:
 
         # send this summary to the moderator
 
+        # TODO: include the message metadata string
+
+        # TODO: include the summaries from both the user/automated and moderator report flows
 
         return "Placeholder summary for advanced moderators."
 

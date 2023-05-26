@@ -15,8 +15,8 @@ class State(Enum):
     CONFIRMED_COVID_DISINFO = auto()
     NOT_COVID_DISINFO_THANK_USER = auto()
     DISINFO_CATEGORY_IDENTIFIED = auto()
-    SEVERITY_IDENTIFIED_CONFUSING = auto()
-    SEVERITY_IDENTIFIED_OTHER = auto()
+    SEVERITY_IDENTIFIED_MODERATE = auto()
+    SEVERITY_IDENTIFIED_HIGH = auto()
     ASK_FOR_FEED_MODIFICATIONS = auto()
     THANK_FOR_REPORTING = auto()
     REPORT_CANCELLED = auto()
@@ -29,8 +29,8 @@ STATE_TO_MESSAGE_PREFIX = {
     State.NOT_COVID_DISINFO_THANK_USER: "Thank you for your report. However, we are currently focusing our efforts on disinformation related to COVID-19 and will cancel your report. Start a new report by typing `report`.",
     State.CONFIRMED_COVID_DISINFO: "What category of COVID-19 disinformation would this fall under?",
     State.DISINFO_CATEGORY_IDENTIFIED: "What is the severity?",
-    State.SEVERITY_IDENTIFIED_CONFUSING: "Thank you! We’ll review your report and look into removing the person’s post, as well as temporarily muting their account.",
-    State.SEVERITY_IDENTIFIED_OTHER: "Thank you! We’ll review your report and look into banning this person’s account.",
+    State.SEVERITY_IDENTIFIED_MODERATE: "Thank you! We’ve labelled this report as moderate severity. We’ll review your report and look into next steps. This may involve removing or adding disclaimers to the post and temporarily muting or banning the user from the group.",
+    State.SEVERITY_IDENTIFIED_HIGH: "Thank you! We’ve labelled this report as high severity. We’ll review your report and look into next steps. This may involve removing or adding disclaimers to the post and temporarily muting or banning the user from the group.",
     State.ASK_FOR_FEED_MODIFICATIONS: "How would you like to update your feed going forward?",
     State.THANK_FOR_REPORTING: "Thank you for your report! We appreciate your help in keeping our platform safe for our community."
 } 
@@ -42,9 +42,9 @@ STATE_TO_SINGLE_NEXT_STATE =  {
     # scale identified transition is more advanced
     # ask if covid disinfo transition is more advanced
     State.CONFIRMED_COVID_DISINFO: State.DISINFO_CATEGORY_IDENTIFIED,
-    State.DISINFO_CATEGORY_IDENTIFIED: State.SEVERITY_IDENTIFIED_CONFUSING, # TODO: this is a placeholder, but the DISINFO_CATEGORY_IDENTIFIED state has multiple next states
-    State.SEVERITY_IDENTIFIED_CONFUSING: State.ASK_FOR_FEED_MODIFICATIONS,
-    State.SEVERITY_IDENTIFIED_OTHER: State.ASK_FOR_FEED_MODIFICATIONS,
+    # from disinfo category identified is more advanced
+    State.SEVERITY_IDENTIFIED_MODERATE: State.ASK_FOR_FEED_MODIFICATIONS,
+    State.SEVERITY_IDENTIFIED_HIGH: State.ASK_FOR_FEED_MODIFICATIONS,
     State.ASK_FOR_FEED_MODIFICATIONS: State.THANK_FOR_REPORTING
 }
 
@@ -87,22 +87,26 @@ STATE_TO_EMOJI_OPTIONS = {
         # SEE https://emojicombos.com/color for more circle emojis USE THIS!!!!
     },
     State.DISINFO_CATEGORY_IDENTIFIED: { #this is severity
-        "🟥": EmojiOption(emoji = "🟥", option_str = "Purposefully Confusing / Untrue Content"),
-        "🟧": EmojiOption(emoji = "🟧", option_str = "Misinterpreting/Distorting/Disobeying Official Government Health Orders/Advisories"),
-        "🟨": EmojiOption(emoji = "🟨", option_str = "Public Health Risk"),
-        "🟩": EmojiOption(emoji = "🟩", option_str = "Targeted Danger Towards Specific Individual/Group")
+        "🟩": EmojiOption(emoji = "🟩", option_str = "Purposefully Confusing / Untrue Content"),
+        "🟨": EmojiOption(emoji = "🟨", option_str = "Misinterpreting/Distorting/Disobeying Official Government Health Orders/Advisories"),
+        "🟧": EmojiOption(emoji = "🟧", option_str = "Public Health Risk"),
+        "🟥": EmojiOption(emoji = "🟥", option_str = "Targeted Danger Towards Specific Individual/Group")
     },
-    # TODO: take the relevant actions on these
     State.ASK_FOR_FEED_MODIFICATIONS: {
-        "🧹": EmojiOption(emoji = "🧹", option_str = "Remove Post From Feed"),
-        "❌": EmojiOption(emoji = "❌", option_str = "Block User"),
-        "💬": EmojiOption(emoji = "💬", option_str = "Temporarily Mute User")
+        "❌": EmojiOption(emoji = "❌", option_str = "Block User", action = ModeratorAction.BLOCK_POSTER_TO_REPORTER),
+        "💬": EmojiOption(emoji = "💬", option_str = "Temporarily Mute Posts from the User", action = ModeratorAction.MUTE_POSTER_TO_REPORTER)
     }  
 }
 
+
+HIGH_SEVERITY_EMOJI_OPTIONS = set([
+    STATE_TO_EMOJI_OPTIONS[State.DISINFO_CATEGORY_IDENTIFIED]["🟧"],
+    STATE_TO_EMOJI_OPTIONS[State.DISINFO_CATEGORY_IDENTIFIED]["🟥"]
+])
+
 DEFAULT_CONTINUE_SYSTEM_MESSAGE_SUFFIX = "Once you're done selecting, please type `continue`. Type `cancel` to cancel the report at any point."
 
-MESSAGE_THEN_CONTINUE = set([State.SEVERITY_IDENTIFIED_CONFUSING, State.SEVERITY_IDENTIFIED_OTHER])
+MESSAGE_THEN_CONTINUE = set([State.SEVERITY_IDENTIFIED_MODERATE, State.SEVERITY_IDENTIFIED_HIGH])
 
 NO_CONTINUE_STATES = set([State.THANK_FOR_REPORTING, State.NOT_COVID_DISINFO_THANK_USER])
 
@@ -111,6 +115,10 @@ CANCEL_REPORT_STATES = set([State.NOT_COVID_DISINFO_THANK_USER])
 DISINFO_CATEGORY_EMOJI_OPTION = STATE_TO_EMOJI_OPTIONS[State.SCALE_IDENTIFIED]["1️⃣"]
 
 YES_COVID_DISINFO_EMOJI_OPTION = STATE_TO_EMOJI_OPTIONS[State.ASK_IF_COVID_DISINFO]["👍"]
+
+MODERATE_PRIORITY_TAG = "[⚠️ MODERATE PRIORITY ⚠️]"
+
+HIGH_PRIORITY_TAG = "[🚨 HIGH PRIORITY 🚨]"
 
 class Report:
     START_KEYWORD = "report"
@@ -126,6 +134,8 @@ class Report:
         # tracking the options chosen (we will use these for the moderator reporting flow)
         # this will store EmojiOption instances
         self.state_to_selected_emoji_options = defaultdict(set)  
+
+        self.high_severity = False  # moderate otherwise
 
     async def handle_message(self, message):
         '''
@@ -176,13 +186,24 @@ class Report:
         if message.content == self.CONTINUE_KEYWORD:
 
             # the user has said `continue` after responding to the previous state
+            reply_list = []
+
+            # check to see if we are in an emoji-actionable state
+            if self.state in STATE_TO_EMOJI_OPTIONS:
+
+                # take the actions associated with the options the moderator chose in the previous state
+                # get the emoji options selected for the current state
+                current_state_emoji_options = self.state_to_selected_emoji_options[self.state]
+                reply = self.update_actions(current_state_emoji_options)
+
+                # check for non-trivial reply
+                if reply:
+                    reply_list.append(reply)
 
             # TRANSITIONS
             self.make_state_transitions()
 
             # MESSAGING
-            reply_list = []
-
             if self.state in MESSAGE_THEN_CONTINUE:
                 reply_list.append(STATE_TO_MESSAGE_PREFIX[self.state])
                 self.state = STATE_TO_SINGLE_NEXT_STATE[self.state]
@@ -225,10 +246,38 @@ class Report:
             self.state = State.CONFIRMED_COVID_DISINFO if YES_COVID_DISINFO_EMOJI_OPTION in self.state_to_selected_emoji_options[self.state] else State.NOT_COVID_DISINFO_THANK_USER
             return
 
+
+        elif self.state == State.DISINFO_CATEGORY_IDENTIFIED:
+
+            for emoji_option in self.state_to_selected_emoji_options[self.state]:
+                if emoji_option in HIGH_SEVERITY_EMOJI_OPTIONS:
+                    self.high_severity = True
+                    self.state = State.SEVERITY_IDENTIFIED_HIGH
+                    return
+
+            # if we haven't transitioned to the high-severity response already, transition to the moderate-severity response
+            self.state = State.SEVERITY_IDENTIFIED_MODERATE
+            return
+
+
         # handling 1-to-1 transitions
         if self.state in STATE_TO_SINGLE_NEXT_STATE:
             self.state = STATE_TO_SINGLE_NEXT_STATE[self.state]
 
+
+    def update_actions(self, current_state_emoji_options):
+        # generate a message to the user of actions that will be taken
+        if self.state in STATE_TO_EMOJI_OPTIONS and len(current_state_emoji_options):
+            actions = [emoji_option.action for emoji_option in current_state_emoji_options if emoji_option.action]
+
+            if len(actions):
+                reply = "We have taken the following actions based on your responses: \n"
+                for action in actions:
+                    reply += f"·    {ACTION_TO_POST_ACTION_MESSAGE[action]}\n"
+
+                return reply
+        
+        return ""
 
     async def handle_reaction(self, message, emoji, user):
 
@@ -240,7 +289,6 @@ class Report:
 
                 emoji_option = STATE_TO_EMOJI_OPTIONS[self.state][emoji]
 
-                print(f"The user reacted with option {emoji} during state {self.state}")
                 self.state_to_selected_emoji_options[self.state].add(emoji_option)
 
         # we don't need to print a message to the user immediately upon reacting
@@ -256,6 +304,10 @@ class Report:
     def generate_summary(self, report_id):  # there may be additional parameters to add in the metadata (user id, etc.) to the report summary
         # based on the contents of self.state_to_selected_emoji_options (the options selected at each state by the user)
         # format a string that will be sent to the moderator channel to describe the report
+
+        # TODO: start with HIGH_PRIORITY_TAG if self.high_severity is true otherwise MODERATE_PRIORITY_TAG
+
+        # TODO: include the message metadata string
 
         return f"Placeholder Report Summary for Report {report_id}!"
 
@@ -298,10 +350,13 @@ class AutomatedReport:
         # based on the contents of self.state_to_selected_emoji_options (the options selected at each state by the user)
         # format a string that will be sent to the moderator channel to describe the report
 
+        # TODO: start with HIGH_PRIORITY_TAG if very_high_disinfo_prob else MODERATE_PRIORITY_TAG
+
         return f"Placeholder Automated Report Summary for Report {self.report_id}! This automated report has disinformation probability of {self.disinfo_prob}."
 
-        # TODO: if alert_moderator_to_high_report_user is true, then also add another string to the msg like "user {name} is also known to have a high number of reported posts, with {self.client.user_id_to_number_of_removed_posts[message.author.id]} of their posts being reported"
+        # TODO: include the message metadata string
 
+        # TODO: if alert_moderator_to_high_report_user is true, then also add another string to the msg like "user {name} is also known to have a high number of reported posts, with {self.client.user_id_to_number_of_removed_posts[message.author.id]} of their posts being reported"
 
         # TODO: if very_high_disinfo prob is true, note that we took the actions indicated in our moderator reporting flow
 
