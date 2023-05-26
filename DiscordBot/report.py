@@ -331,6 +331,7 @@ class AutomatedReport:
         self.report_id = report_id
         self.very_high_disinfo_prob = very_high_disinfo_prob
         self.alert_alert_moderator_to_high_report_user = False
+        self.high_severity = self.very_high_disinfo_prob
 
         # TODO: use this set of actions to only display to the moderator not-already-automatically-taken options in thier reporting flow
         # aka when we ask the moderator to select actions, only utilize the EmojiOptions whose actions aren't already stored here
