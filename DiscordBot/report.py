@@ -126,9 +126,10 @@ class Report:
     HELP_KEYWORD = "help"
     CONTINUE_KEYWORD = "continue"
 
-    def __init__(self, client):
+    def __init__(self, client, reporter_name):
         self.state = State.REPORT_START
         self.client = client
+        self.reporter_name = reporter_name
         self.message = None
 
         # tracking the options chosen (we will use these for the moderator reporting flow)
@@ -272,7 +273,7 @@ class Report:
 
             for action in actions:
                 if action == ModeratorAction.MUTE_POSTER_TO_REPORTER:
-                    await self.client.note_in_channel_mute_poster_to_reporter(self.message, self.message.author.name, self.client.poster_to_reporter[self.message.author.name]) # TODO: pass in parameters
+                    await self.client.note_in_channel_mute_poster_to_reporter(self.message, self.message.author.name, self.reporter_name) # TODO: pass in parameters
 
     def update_actions(self, current_state_emoji_options):
 
