@@ -1,4 +1,5 @@
 # bot.py
+import asyncio
 import discord
 from discord.ext import commands
 import os
@@ -31,6 +32,9 @@ with open(token_path) as f:
 
 
 PERSONAL_GROUP_NUMBER_STR = "33"
+DEFAULT_MODIFY_POST_DISCLAIMER = "WARNING! This message may contain disinformation."
+DEFAULT_NOTFIY_USER_OF_TRANSGESSION = "Dear user, we regret to inform you that your message has been flagged for disinformation. We will investigate your post and take actions accordingly."
+MUTE_TIME_IN_SECONDS = 5
 
 
 class ModBot(discord.Client):
@@ -45,7 +49,7 @@ class ModBot(discord.Client):
         intents = discord.Intents.default()
         intents.messages = True
         intents.reactions = True
-        #intents.message_content = True # Added # NOTE: Abi has to comment this out for her implementation
+        intents.message_content = True # Added # NOTE: Abi has to comment this out for her implementation
         intents.dm_reactions = True
         intents.guild_reactions = True
         super().__init__(command_prefix='.', intents=intents, max_messages = 1000)
@@ -275,8 +279,55 @@ class ModBot(discord.Client):
         
         # If the report is finished, update the count of the poster's reported messages
         if self.moderator_responses[moderator_id].response_finished():
-            self.user_id_to_number_of_reported_posts[moderator_responses[moderator_id].reported_message.author.id] += 1
+            self.user_id_to_number_of_reported_posts[self.moderator_responses[moderator_id].reported_message.author.id] += 1
             pass
+
+    # TODO
+    async def remove_reported_post(self, message):
+        # use the discord py Message object stored in self.reported_message to get the info necessary to remove the reported message
+        await message.delete()
+
+    # TODO
+    async def modify_post_with_disclaimer_and_reliable_resources(self, message):
+        responses = [DEFAULT_MODIFY_POST_DISCLAIMER,\
+            "Message sent by:"+ "```" + message.author.name + ": " + message.content + "```",\
+            "Please visit " + "https://www.cdc.gov/ " + "for reliable information."]
+        for r in responses:
+            await message.channel.send(r)
+
+    # TODO
+    async def notify_poster_of_transgression(self, message):
+        # notify user of transgression
+        # state which post in which channel was the reason
+        responses = [DEFAULT_NOTFIY_USER_OF_TRANSGESSION , \
+                            "The following post: " ,\
+                            message.content ,\
+                            "Was reported in the following channel: {}\n".format(message.channel.name)]
+        for r in responses:
+            await message.author.send(content=r)
+
+    # TODO
+    async def temporarily_mute_user(self, message):
+        # see https://stackoverflow.com/questions/62436615/how-do-i-temp-mute-someone-using-discord-py#:~:text=mute%20command%20so%20it's%20possible,and%20y%20is%20for%20years.
+        # make sure to message the user when they have been muted/unmuted
+         await message.channel.send("{} has been muted!\n" .format(message.author.mention))
+         await asyncio.sleep(MUTE_TIME_IN_SECONDS)
+         await message.channel.send("{} has been unmuted!\n" .format(message.author.mention))
+
+    # TODO
+    async def permanently_remove_user(self, message):
+        # since we don't actually want to remove any users, send a message to the channel saying "user {user_name} has been removed from this channel!"
+        # make sure to message the user when they have been removed
+        await message.channel.send("User {} has been removed from this channel!\n" .format(message.author.mention))
+        await message.author.send(content="We regret to inform you that you've been removed from our social network!")
+    
+    # TODO
+    async def notify_group_of_transgressions(self, message):
+        # Notify users in group or joining group about the high volume of misinformation
+        await message.channel.send("Dear users of group-{}, we regret to inform you that this group has been found to have high volume of misinformation content, please be advised!\n".format(self.group_num))
+
+    async def increment_group_transgression_counter(self, message):
+        self.channel_id_to_moderator_flag_count[message.channel.id] += 1
 
 
     def eval_text(self, message):

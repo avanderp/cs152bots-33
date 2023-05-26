@@ -1,5 +1,4 @@
 # file for implementing the class representing a moderator response
-import asyncio
 from enum import Enum, auto
 import discord
 import re
@@ -42,9 +41,6 @@ STATE_TO_SINGLE_NEXT_STATE =  {
 }
 
 DEFAULT_REQUEST_EMOJI_RESPONSE_STR = " React to this message with the emoji corresponding to the correct category / categories.\n"
-DEFAULT_MODIFY_POST_DISCLAIMER = "WARNING! This message may contain disinformation."
-DEFAULT_NOTFIY_USER_OF_TRANSGESSION = "Dear user, we regret to inform you that your message has been flagged for disinformation. We will investigate your post and take actions accordingly."
-MUTE_TIME_IN_SECONDS = 5
 
 # see ModeratorAction enum in reactions.py for different actions to assign to emoji options
 STATE_TO_EMOJI_OPTIONS = {
@@ -133,9 +129,7 @@ class Response:
             # use the client mapping from report id to report to get discord's Message object of the reported message
             self.report_id = report_id
             self.report = self.client.report_id_to_report[report_id]
-            print("self.client.report_id_to_report.keys()[0]", type(list(self.client.report_id_to_report.keys())[0]), self.client.report_id_to_report, "report_id ",type(report_id), report_id, "self.client.report_id_to_report[report_id]", type(self.client.report_id_to_report[report_id]), self.client.report_id_to_report[report_id])
             self.reported_message = self.client.report_id_to_report[report_id].message
-            print("reported_message ", self.reported_message, "state ",  self.client.report_id_to_report[report_id].state)
             # Here we've found the message - it's up to you to decide what to do next!
             self.state = State.REPORT_IDENTIFIED
             return [f"Thank you for beginning a response to report number {report_id}!", \
@@ -215,73 +209,23 @@ class Response:
         return []
 
     async def take_actions(self, moderator_emojis: Set[ModeratorAction]):
-        print("in take_actions", [action for action in moderator_emojis])
         for emoji in moderator_emojis:
             if emoji.action == ModeratorAction.REMOVE_POST:
-                print("about to remove_post")
-                await self.remove_reported_post()
+                await self.client.remove_reported_post(self.reported_message)
             elif emoji.action == ModeratorAction.MODIFY_POST_WITH_DISCLAIMER_AND_RESOURCES:
-                await self.modify_post_with_disclaimer_and_reliable_resources()
+                await self.client.modify_post_with_disclaimer_and_reliable_resources(self.reported_message)
             elif emoji.action == ModeratorAction.NOTIFY_POSTER_OF_TRANSGRESSION:
-                await self.notify_poster_of_transgression()
+                await self.client.notify_poster_of_transgression(self.reported_message)
             elif emoji.action == ModeratorAction.TEMPORARILY_MUTE_USER:
-                await self.temporarily_mute_user()
+                await self.client.temporarily_mute_user(self.reported_message)
             elif emoji.action == ModeratorAction.PERMANENTLY_REMOVE_USER:
-                await self.permanently_remove_user()
+                await self.client.permanently_remove_user(self.reported_message)
             elif emoji.action == ModeratorAction.NOTIFY_GROUP_OF_TRANSGRESSIONS:
-                await self.notify_group_of_transgressions()
+                await self.client.notify_group_of_transgressions(self.reported_message)
             elif emoji.action == ModeratorAction.INCREMENT_GROUP_TRANSGRESSION_COUNTER:
-                await self.increment_group_transgression_counter()
-        print("Done take actions")
+                await self.client.increment_group_transgression_counter(self.reported_message)
 
-    # TODO
-    async def remove_reported_post(self):
-        # use the discord py Message object stored in self.reported_message to get the info necessary to remove the reported message
-        await self.reported_message.delete()
-
-    # TODO
-    async def modify_post_with_disclaimer_and_reliable_resources(self):
-        responses = [DEFAULT_MODIFY_POST_DISCLAIMER,\
-            "Message sent by:"+ "```" + self.reported_message.author.name + ": " + self.reported_message.content + "```",\
-            "Please visit " + "https://www.cdc.gov/ " + "for reliable information."]
-        for r in responses:
-            await self.reported_message.channel.send(r)
-
-    # TODO
-    async def notify_poster_of_transgression(self):
-        # notify user of transgression
-        # state which post in which channel was the reason
-        responses = [DEFAULT_NOTFIY_USER_OF_TRANSGESSION , \
-                            "The following post: " ,\
-                            self.reported_message.content ,\
-                            "Was reported in the following channel: {}\n".format(self.reported_message.channel.name)]
-        for r in responses:
-            await self.reported_message.author.send(content=r)
-
-    # TODO
-    async def temporarily_mute_user(self):
-        # see https://stackoverflow.com/questions/62436615/how-do-i-temp-mute-someone-using-discord-py#:~:text=mute%20command%20so%20it's%20possible,and%20y%20is%20for%20years.
-        # make sure to message the user when they have been muted/unmuted
-         await self.reported_message.channel.send("{} has been muted!\n" .format(self.reported_message.author.mention))
-         await asyncio.sleep(MUTE_TIME_IN_SECONDS)
-         await self.reported_message.channel.send("{} has been unmuted!\n" .format(self.reported_message.author.mention))
-
-    # TODO
-    async def permanently_remove_user(self):
-        # since we don't actually want to remove any users, send a message to the channel saying "user {user_name} has been removed from this channel!"
-        # make sure to message the user when they have been removed
-        await self.reported_message.channel.send("User {} has been removed from this channel!\n" .format(self.reported_message.author.mention))
-        await self.reported_message.author.send(content="We regret to inform you that you've been removed from our social network!")
     
-    # TODO
-    async def notify_group_of_transgressions(self):
-        # Notify users in group or joining group about the high volume of misinformation
-        await self.reported_message.channel.send("Dear users of group-{}, we regret to inform you that this group has been found to have high volume of misinformation content, please be advised!\n".format(self.client.group_num))
-
-    async def increment_group_transgression_counter(self):
-        # Notify users in group or joining group about the high volume of misinformation
-        await self.reported_message.channel.send
-
     async def handle_reaction(self, message, emoji, user):
 
         # check this is a state with valid emoji reaction options
@@ -292,7 +236,6 @@ class Response:
 
                 emoji_option = STATE_TO_EMOJI_OPTIONS[self.state][emoji]
 
-                print(f"The moderator reacted with option {emoji} during state {self.state}")
                 self.moderator_state_to_selected_emoji[self.state].add(emoji_option)
 
         # we don't need to print a message to the user immediately upon reacting
