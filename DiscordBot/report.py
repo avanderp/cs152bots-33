@@ -312,7 +312,7 @@ class Report:
         else:
             reply.append(MODERATE_PRIORITY_TAG)
 
-        reply.append(f"Generating report: {report_id}")
+        reply.append(f"Report ID: {report_id}")
         reply.append(self.client.generate_message_metadata_summary(self.message))
         reply.append("Here are the reporter's answers to the following questions:")
         for state in self.state_to_selected_emoji_options:
