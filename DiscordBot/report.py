@@ -273,7 +273,7 @@ class Report:
 
             for action in actions:
                 if action == ModeratorAction.MUTE_POSTER_TO_REPORTER:
-                    self.client.note_in_channel_mute_poster_to_reporter() # TODO: pass in parameters
+                    await self.client.note_in_channel_mute_poster_to_reporter() # TODO: pass in parameters
 
             if len(actions):
                 reply = "We have taken the following actions based on your responses: \n"
