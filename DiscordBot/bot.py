@@ -320,7 +320,8 @@ class ModBot(discord.Client):
 
     # TODO
     def generate_message_metadata_summary(self, message):
-        reply = f"The following message: {message.content}\n" + \
+        reply = "\nPOST METADATA:\n" +\
+            f"The following message: {message.content}\n" + \
             f"Was created by: {message.author.name}\n" + \
             f"{message.author.name}'s previous reports' count is: {self.user_id_to_number_of_reported_posts[message.author.id]}\n" +\
             f"It was posted in the following channel: {message.channel.name}\n" +\
