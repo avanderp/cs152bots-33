@@ -282,12 +282,10 @@ class Response:
         for state in self.moderator_state_to_selected_emoji:
             text = " AND ".join([f"{emoji_option.emoji}: {emoji_option.option_str}" for emoji_option in self.moderator_state_to_selected_emoji[state]])
             reply.append(f"{STATE_TO_MESSAGE_PREFIX[state]} -> {text}")
-            # reply.append(f"{STATE_TO_MESSAGE_PREFIX[state]} -> {self.moderator_state_to_selected_emoji[state].emoji}: {self.moderator_state_to_selected_emoji[state].option_str}")
         return "\n".join(reply)
 
         # TODO: include the summaries from both the user/automated and moderator report flows
 
-        # return "Placeholder summary for advanced moderators."
 
     def response_cancelled(self):
         return self.state == State.RESPONSE_CANCELLED 

@@ -273,7 +273,7 @@ class Report:
             if len(actions):
                 reply = "We have taken the following actions based on your responses: \n"
                 for action in actions:
-                    reply += f"·    {ACTION_TO_POST_ACTION_MESSAGE[action]}\n" # TODO: What is this???
+                    reply += f"·    {ACTION_TO_POST_ACTION_MESSAGE[action]}\n"
 
                 return reply
         
@@ -322,8 +322,6 @@ class Report:
         return "\n".join(reply)
         # TODO: include the message metadata string
 
-        # return f"Placeholder Report Summary for Report {report_id}!"
-
     
 
 class AutomatedReport:
@@ -365,7 +363,6 @@ class AutomatedReport:
 
         # TODO: start with HIGH_PRIORITY_TAG if very_high_disinfo_prob else MODERATE_PRIORITY_TAG
 
-        # return f"Placeholder Automated Report Summary for Report {self.report_id}! This automated report has disinformation probability of {self.disinfo_prob}."
         reply = []
         if self.high_severity:
             reply.append(HIGH_PRIORITY_TAG)
@@ -376,7 +373,6 @@ class AutomatedReport:
         reply.append("\nAUTOMATED REPORT SUMMARY:" )
         reply.append("Here are the set of actions taken by the automated report:")
         for action in self.set_of_actions_taken:
-            # text = " AND ".join([f"{emoji_option.emoji}: {emoji_option.option_str}" for emoji_option in self.set_of_actions_taken[state]])
             reply.append(f"{ACTION_TO_POST_ACTION_MESSAGE[action]}")
         
 
