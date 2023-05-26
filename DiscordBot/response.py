@@ -5,7 +5,7 @@ import re
 from reactions import EmojiOption, ModeratorAction, ACTION_TO_POST_ACTION_MESSAGE
 from collections import defaultdict
 from typing import Set
-from report import AutomatedReport
+from report import Report, AutomatedReport
 
 class State(Enum):
     RESPONSE_START = auto()
@@ -28,8 +28,8 @@ STATE_TO_MESSAGE_PREFIX = {
     State.ASK_FOR_GROUP_ACTIONS: "What actions should be taken on the group in which the post was made?",
     State.ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS: "Would you like to flag this report for advanced moderators to review?",
     State.ASK_FOR_REASON_FOR_ELEVATING: "Why should this report be forwarded to advanced moderators?",
-    State.THANK_MODERATOR: "Thank you for responding to the report! Begin a new response at any time by typing `respond`.",
-    State.GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS: "Thank you for responding to the report! Begin a new response at any time by typing `respond`."  # handle_message will generate the advanced moderator summary
+    State.THANK_MODERATOR: "Thank you for responding to the report! Begin a new response at any time by typing `start`.",
+    State.GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS: "Thank you for responding to the report! Begin a new response at any time by typing `start`."  # handle_message will generate the advanced moderator summary
 }
 
 # If the state has only one next state to transition into
@@ -43,6 +43,8 @@ STATE_TO_SINGLE_NEXT_STATE =  {
 }
 
 DEFAULT_REQUEST_EMOJI_RESPONSE_STR = " React to this message with the emoji corresponding to the correct category / categories.\n"
+
+ADVANCED_MODERATOR_REPORT_FLAG = "[ ! ADVANCED MODERATOR REPORT ! ]"
 
 
 # see ModeratorAction enum in reactions.py for different actions to assign to emoji options
@@ -275,7 +277,8 @@ class Response:
 
         # send this summary to the moderator
 
-        reply = [self.report.generate_summary(self.report_id)]
+        reply = [ADVANCED_MODERATOR_REPORT_FLAG]
+        reply.append(self.report.generate_summary(self.report_id) if isinstance(self.report, Report) else self.report.generate_summary())
         reply.append("\nBASELINE MODERATOR REPORT SUMMARY:" )
         reply.append("Here are the moderator's answers to the following questions:")
         for state in self.moderator_state_to_selected_emoji:
