@@ -6,7 +6,7 @@ import json
 import logging
 import re
 import requests
-from report import Report
+from report import Report, AutomatedReport
 from response import Response
 import pdb
 from collections import defaultdict
@@ -34,13 +34,18 @@ PERSONAL_GROUP_NUMBER_STR = "33"
 
 
 class ModBot(discord.Client):
-    
+
+    AUTO_FLAG_REGEX = "AUTO_FLAG DISINFO_PROB=[0-9]*\.[0-9]+"
+    MODERATE_DISINFO_PROB_THRESHOLD = 0.6
+    VERY_HIGH_DISINFO_PROB_THRESHOLD = 0.9
+    USER_HIGH_REPORT_AMOUNT_THRESHOLD = 5
+    DISINFO_PROB_PREFIX_CHAR = '='
 
     def __init__(self): 
         intents = discord.Intents.default()
         intents.messages = True
         intents.reactions = True
-        intents.message_content = True # Added 
+        #intents.message_content = True # Added # NOTE: Abi has to comment this out for her implementation
         intents.dm_reactions = True
         intents.guild_reactions = True
         super().__init__(command_prefix='.', intents=intents, max_messages = 1000)
@@ -48,10 +53,12 @@ class ModBot(discord.Client):
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
         self.reports = {} # Map from user IDs to the state of their report
         self.moderator_responses = {} # Map from moderator ID to the state of their moderator report response
-        self.report_id_to_report = {} # Map from report IDs to the Report class instance
+        self.report_id_to_report = {} # Map from report IDs to the Report or AutomatedReport class instance
         self.next_report_id = 0
         self.next_moderator_response_id = 0
-        self.user_id_to_number_of_removed_posts = defaultdict(int) # Map from user IDs to the number of the user's report that the ModBot has removed (default 0)
+        self.user_id_to_number_of_reported_posts = defaultdict(int) # Map from user IDs to the number of the user's report that the ModBot has removed (default 0)
+        self.channel_id_to_moderator_flag_count = defaultdict(int)  # TODO: create a function corresponding to INCREMENT_GROUP_TRANSGRESSION_COUNTER to update this
+        self.personal_mod_channel = None
 
     async def on_ready(self):
         print(f'{self.user.name} has connected to Discord! It is these guilds:')
@@ -98,7 +105,7 @@ class ModBot(discord.Client):
     async def handle_channel_reaction(self, message, emoji, user):
         moderator_id = user.id
 
-        # TODO: first check that the reaction is in the group-33-mod
+        # first check that the reaction is in the group-33-mod (we don't care about reactions)
         if message.channel.name != f'group-{self.group_num}-mod':
             return
 
@@ -188,19 +195,54 @@ class ModBot(discord.Client):
         # Only handle messages sent in the "group-#" channel
         if message.channel.name == f'group-{self.group_num}':
             # pass along to the automated flagging logics
+            await self.automated_message_flagging(message)
 
-            # TODO: check if the normal channel message has a AUTO_FLAG keyword
-            # if so, create a "automatically flagged report" and send to moderator channel
-            return
+            
 
         if str(message.channel.name) == f"group-{self.group_num}-mod":
             await self.handle_moderator_channel_message(message)
 
-        # Forward the message to the mod channel
-        # mod_channel = self.mod_channels[message.guild.id]
-        # await mod_channel.send(f'Forwarded message:\n{message.author.name}: "{message.content}"')
-        # scores = self.eval_text(message.content)
-        # await mod_channel.send(self.code_format(scores))
+
+
+
+    # TODO
+    async def automated_message_flagging(self, message):
+        # check to see if the message fits our placeholder template for messages to be auto-flagged from the regular channel
+
+        m = re.search(self.AUTO_FLAG_REGEX, message.content)
+        
+        # does not match the placeholder autoflagging template
+        if not m:
+            # don't do anything with the message
+            return
+
+
+        disinfo_prob = float(message.content[message.content.rindex(self.DISINFO_PROB_PREFIX_CHAR)+1:])
+        print(f"The disinfo probability of the regular channel message is {disinfo_prob}.")
+
+        # first check if it passes the moderate disinfo threshold to create an automated report
+        if disinfo_prob < self.MODERATE_DISINFO_PROB_THRESHOLD:
+            # if not, do nothing
+            return
+        
+        # create an automated report for this post
+        new_automated_report = AutomatedReport(client=self, disinfo_prob = disinfo_prob, 
+                                                message = message,
+                                                automated_report_id = self.next_report_id,
+                                                very_high_disinfo_prob = disinfo_prob > self.VERY_HIGH_DISINFO_PROB_THRESHOLD)
+        self.report_id_to_report[self.next_report_id] = new_automated_report
+
+        # increment the report id
+        self.next_report_id += 1
+
+        # if the automated report has a very high disinfo probability, take the relevant actions
+        if new_automated_report.very_high_disinfo_prob:
+            await new_automated_report.act_on_very_high_disinfo_message()
+
+        # send the summary of the automatically generated report to the moderator channel
+        automated_report_summary = new_automated_report.generate_summary()
+
+        await self.personal_mod_channel.send(automated_report_summary)
 
     
     async def handle_moderator_channel_message(self, message):
@@ -217,7 +259,6 @@ class ModBot(discord.Client):
         # Only respond to non-start messages if the moderator already has an existing response flow
         if moderator_id not in self.moderator_responses and not message.content.startswith(Response.START_KEYWORD):
             return
-
         
         # If we don't currently have an active report response for this moderator, add one
         if moderator_id not in self.moderator_responses:
@@ -232,9 +273,9 @@ class ModBot(discord.Client):
         if self.moderator_responses[moderator_id].response_cancelled():
             self.moderator_responses.pop(moderator_id)
         
-        # NOTE: we may not need this next portion
-        # If the report is finished, initiate the moderator reporting flow
+        # If the report is finished, update the count of the poster's reported messages
         if self.moderator_responses[moderator_id].response_finished():
+            self.user_id_to_number_of_reported_posts[moderator_responses[moderator_id].reported_message.author.id] += 1
             pass
 
 

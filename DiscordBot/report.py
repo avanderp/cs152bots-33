@@ -23,7 +23,8 @@ class State(Enum):
 STATE_TO_MESSAGE_PREFIX = {
     State.REPORT_STARTED: "First, we'd like to know who your post affects.",
     State.SCALE_IDENTIFIED: "What category of abuse would this fall under?",
-    State.GENERAL_CATEGORY_IDENTIFIED: "What category of disinformation would this fall under?",  # TODO: see comment on reporting flow... when do we narrow down to covid disinfo?
+    # TODO: implement the new states for asking whether the disinfo is covid related (and the state for it not being as well, which should cancel the report)
+    State.GENERAL_CATEGORY_IDENTIFIED: "What category of disinformation would this fall under?",
     State.DISINFO_CATEGORY_IDENTIFIED: "What is the severity?",
     State.SEVERITY_IDENTIFIED_CONFUSING: "Thank you! We’ll review your report and look into removing the person’s post, as well as temporarily muting their account.",
     State.SEVERITY_IDENTIFIED_OTHER: "Thank you! We’ll review your report and look into banning this person’s account.",
@@ -229,6 +230,49 @@ class Report:
 
     
 
+class AutomatedReport:
+    def __init__(self, client, message, disinfo_prob: float, automated_report_id: int, very_high_disinfo_prob: bool):
+        self.client = client
+        self.message = message
+        self.disinfo_prob = disinfo_prob
+        self.automated_report_id = automated_report_id
+        self.very_high_disinfo_prob = very_high_disinfo_prob
+        self.alert_alert_moderator_to_high_report_user = False
 
-    
+        # TODO: use this set of actions to only display to the moderator not-already-automatically-taken options in thier reporting flow
+        # aka when we ask the moderator to select actions, only utilize the EmojiOptions whose actions aren't already stored here
+        self.set_of_actions_taken = set()  # this will contain
+
+    async def act_on_very_high_disinfo_message(self):
+        # TODO: fill in the function calls here to the modbot action functions once debugged / moved by Shai
+
+        print(f"Removing the message {self.message.content} from the general channel.")
+        #self.client.remove_message(self.message)
+
+        print(f"Notifying the poster of the message, {self.message.author.name} to their transgression.")
+        #self.client.notify_poster_of_transgression(self.message)
+
+        # does the poster have a high count of existing reported posts?
+        if self.client.user_id_to_number_of_removed_posts[self.message.author.id] > self.client.USER_HIGH_REPORT_AMOUNT_THRESHOLD:
+
+            # this flag is utilized in generate_summary
+            self.alert_moderator_to_high_report_user = True
+
+            print(f"Temporarily muting the poster {self.message.author.name}.")
+            #self.client.temporarily_mute_user(self.message.author.id)
+
+    # TODO
+    def generate_summary(self):  # there may be additional parameters to add in the metadata (user id, etc.) to the report summary
+        # based on the contents of self.state_to_selected_emoji_options (the options selected at each state by the user)
+        # format a string that will be sent to the moderator channel to describe the report
+
+        return f"Placeholder Automated Report Summary for Report {self.automated_report_id}! This automated report has disinformation probability of {self.disinfo_prob}."
+
+        # TODO: if alert_moderator_to_high_report_user is true, then also add another string to the msg like "user {name} is also known to have a high number of reported posts, with {self.client.user_id_to_number_of_removed_posts[message.author.id]} of their posts being reported"
+
+
+        # TODO: if very_high_disinfo prob is true, note that we took the actions indicated in our moderator reporting flow
+
+
+
 
