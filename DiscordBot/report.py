@@ -273,7 +273,7 @@ class Report:
             if len(actions):
                 reply = "We have taken the following actions based on your responses: \n"
                 for action in actions:
-                    reply += f"·    {ACTION_TO_POST_ACTION_MESSAGE[action]}\n"
+                    reply += f"·    {ACTION_TO_POST_ACTION_MESSAGE[action]}\n" # TODO: What is this???
 
                 return reply
         
@@ -306,10 +306,19 @@ class Report:
         # format a string that will be sent to the moderator channel to describe the report
 
         # TODO: start with HIGH_PRIORITY_TAG if self.high_severity is true otherwise MODERATE_PRIORITY_TAG
-
+        reply = []
+        if self.high_severity:
+            reply.append(HIGH_PRIORITY_TAG)
+        else:
+            reply.append(MODERATE_PRIORITY_TAG)
+        reply.append(self.client.generate_message_metadata_summary(self.message))
+        reply.append("Here are the reporter's answers to the following questions:")
+        for state in self.state_to_selected_emoji_options:
+            reply.append(f"{STATE_TO_MESSAGE_PREFIX[state]} -> {self.state_to_selected_emoji_options[state].emoji}: {self.state_to_selected_emoji_options[state].option_str}")
+        return "\n".join(reply)
         # TODO: include the message metadata string
 
-        return f"Placeholder Report Summary for Report {report_id}!"
+        # return f"Placeholder Report Summary for Report {report_id}!"
 
     
 
@@ -352,13 +361,27 @@ class AutomatedReport:
 
         # TODO: start with HIGH_PRIORITY_TAG if very_high_disinfo_prob else MODERATE_PRIORITY_TAG
 
-        return f"Placeholder Automated Report Summary for Report {self.report_id}! This automated report has disinformation probability of {self.disinfo_prob}."
+        # return f"Placeholder Automated Report Summary for Report {self.report_id}! This automated report has disinformation probability of {self.disinfo_prob}."
+        reply = []
+        if self.high_severity:
+            reply.append(HIGH_PRIORITY_TAG)
+        else:
+            reply.append(MODERATE_PRIORITY_TAG)
+        reply.append(self.client.generate_message_metadata_summary(self.message))
+        reply.append("Here are the reporter's answers to the following questions:")
+        for state in self.state_to_selected_emoji_options:
+            reply.append(f"{STATE_TO_MESSAGE_PREFIX[state]} -> {self.state_to_selected_emoji_options[state].emoji}: {self.state_to_selected_emoji_options[state].option_str}")
+        
 
         # TODO: include the message metadata string
 
         # TODO: if alert_moderator_to_high_report_user is true, then also add another string to the msg like "user {name} is also known to have a high number of reported posts, with {self.client.user_id_to_number_of_removed_posts[message.author.id]} of their posts being reported"
-
+        if self.alert_alert_moderator_to_high_report_user:
+            reply.append(f"User {self.message.author.name} is also known to have a high number of reported posts, with {self.client.user_id_to_number_of_removed_posts[self.message.author.id]} of their posts being reported.")
         # TODO: if very_high_disinfo prob is true, note that we took the actions indicated in our moderator reporting flow
+        if self.very_high_disinfo_prob:
+            reply.append(f"Since this post has a high disinforamtion probability >{self.client.VERY_HIGH_DISINFO_PROB_THRESHOLD}, we took the actions indicated in our moderator reporting flow.")
+        return "\n".join(reply)
 
 
 
