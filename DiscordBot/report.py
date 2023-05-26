@@ -371,6 +371,7 @@ class AutomatedReport:
             reply.append(HIGH_PRIORITY_TAG)
         else:
             reply.append(MODERATE_PRIORITY_TAG)
+        reply.append(f"Generating report: {self.report_id}")
         reply.append(self.client.generate_message_metadata_summary(self.message))
         reply.append("\nAUTOMATED REPORT SUMMARY:" )
         reply.append("Here are the set of actions taken by the automated report:")
