@@ -63,6 +63,7 @@ class ModBot(discord.Client):
         self.user_id_to_number_of_reported_posts = defaultdict(int) # Map from user IDs to the number of the user's report that the ModBot has removed (default 0)
         self.channel_id_to_moderator_flag_count = defaultdict(int)
         self.personal_mod_channel = None
+        self.poster_to_reporter = {}
 
     async def on_ready(self):
         print(f'{self.user.name} has connected to Discord! It is these guilds:')
@@ -121,7 +122,7 @@ class ModBot(discord.Client):
 
         # Get the id of the person the Bot sent the react-request message to (the user who reported)
         report_author_id = user.id
-
+        self.poster_to_reporter[message.author.name] = user.name # DOES THIS MAKE SENSE??
         # If we don't currently have an active report for this user
         if report_author_id not in self.reports:
             # reply =  "You do not have any currently active reports. Please start a new report by typing `report`.\n"
@@ -305,8 +306,10 @@ class ModBot(discord.Client):
          await asyncio.sleep(MUTE_TIME_IN_SECONDS)
          await message.channel.send("{} has been unmuted!\n" .format(message.author.mention))
 
-    async def note_in_channel_mute_poster_to_reporter(self, poster, reporter):
-        pass
+    async def note_in_channel_mute_poster_to_reporter(self, message, poster, reporter):
+        await message.channel.send("{} has {}'s messages muted!\n" .format(reporter, poster))
+        await asyncio.sleep(MUTE_TIME_IN_SECONDS)
+        await message.channel.send("{} has {}'s messages unmuted!\n" .format(reporter, poster))
 
     async def permanently_remove_user(self, message):
         # since we don't actually want to remove any users, send a message to the channel saying "user {user_name} has been removed from this channel!"
