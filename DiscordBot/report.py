@@ -266,9 +266,14 @@ class Report:
 
 
     def update_actions(self, current_state_emoji_options):
-        # generate a message to the user of actions that will be taken
+
+        # generate a message to the user of actions that will be taken and respond to actions
         if self.state in STATE_TO_EMOJI_OPTIONS and len(current_state_emoji_options):
             actions = [emoji_option.action for emoji_option in current_state_emoji_options if emoji_option.action]
+
+            for action in actions:
+                if action == ModeratorAction.MUTE_POSTER_TO_REPORTER:
+                    self.client.note_in_channel_mute_poster_to_reporter() # TODO: pass in parameters
 
             if len(actions):
                 reply = "We have taken the following actions based on your responses: \n"
@@ -312,7 +317,7 @@ class Report:
         else:
             reply.append(MODERATE_PRIORITY_TAG)
 
-        reply.append(f"Generating report: {report_id}")
+        reply.append(f"Report ID: {report_id}")
         reply.append(self.client.generate_message_metadata_summary(self.message))
         reply.append("\nUSER REPORT SUMMARY:" )
         reply.append("Here are the reporter's answers to the following questions:")
@@ -332,6 +337,7 @@ class AutomatedReport:
         self.report_id = report_id
         self.very_high_disinfo_prob = very_high_disinfo_prob
         self.alert_alert_moderator_to_high_report_user = False
+        self.high_severity = self.very_high_disinfo_prob
 
         # TODO: use this set of actions to only display to the moderator not-already-automatically-taken options in thier reporting flow
         # aka when we ask the moderator to select actions, only utilize the EmojiOptions whose actions aren't already stored here
@@ -368,7 +374,7 @@ class AutomatedReport:
             reply.append(HIGH_PRIORITY_TAG)
         else:
             reply.append(MODERATE_PRIORITY_TAG)
-        reply.append(f"Generating report: {self.report_id}")
+        reply.append(f"Report ID: {self.report_id}")
         reply.append(self.client.generate_message_metadata_summary(self.message))
         reply.append("\nAUTOMATED REPORT SUMMARY:" )
         reply.append("Here are the set of actions taken by the automated report:")
