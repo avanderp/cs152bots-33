@@ -23,7 +23,8 @@ class State(Enum):
 STATE_TO_MESSAGE_PREFIX = {
     State.REPORT_STARTED: "First, we'd like to know who your post affects.",
     State.SCALE_IDENTIFIED: "What category of abuse would this fall under?",
-    State.GENERAL_CATEGORY_IDENTIFIED: "What category of disinformation would this fall under?",  # TODO: see comment on reporting flow... when do we narrow down to covid disinfo?
+    # TODO: implement the new states for asking whether the disinfo is covid related (and the state for it not being as well, which should cancel the report)
+    State.GENERAL_CATEGORY_IDENTIFIED: "What category of disinformation would this fall under?",
     State.DISINFO_CATEGORY_IDENTIFIED: "What is the severity?",
     State.SEVERITY_IDENTIFIED_CONFUSING: "Thank you! We’ll review your report and look into removing the person’s post, as well as temporarily muting their account.",
     State.SEVERITY_IDENTIFIED_OTHER: "Thank you! We’ll review your report and look into banning this person’s account.",
