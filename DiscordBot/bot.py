@@ -56,8 +56,8 @@ class ModBot(discord.Client):
         self.report_id_to_report = {} # Map from report IDs to the Report or AutomatedReport class instance
         self.next_report_id = 0
         self.next_moderator_response_id = 0
-        self.user_id_to_number_of_removed_posts = defaultdict(int) # Map from user IDs to the number of the user's report that the ModBot has removed (default 0)
-        self.channel_id_to_moderator_flags = defaultdict(int)  # TODO: create a function corresponding to UPDATE_GROUP_TRANSGRESSION_COUNTER to update this
+        self.user_id_to_number_of_reported_posts = defaultdict(int) # Map from user IDs to the number of the user's report that the ModBot has removed (default 0)
+        self.channel_id_to_moderator_flag_count = defaultdict(int)  # TODO: create a function corresponding to INCREMENT_GROUP_TRANSGRESSION_COUNTER to update this
         self.personal_mod_channel = None
 
     async def on_ready(self):
@@ -275,7 +275,7 @@ class ModBot(discord.Client):
         
         # If the report is finished, update the count of the poster's reported messages
         if self.moderator_responses[moderator_id].response_finished():
-            self.user_id_to_number_of_removed_posts[moderator_responses[moderator_id].reported_message.author.id] += 1
+            self.user_id_to_number_of_reported_posts[moderator_responses[moderator_id].reported_message.author.id] += 1
             pass
 
 
