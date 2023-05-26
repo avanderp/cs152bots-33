@@ -320,8 +320,12 @@ class ModBot(discord.Client):
 
     # TODO
     def generate_message_metadata_summary(self, message):
-
-        return "Placeholder metadata summary for the message!"
+        reply = "The following message: {message.content}\n" + \
+            "Was created by: " + message.author.name + \
+            f"{message.author.name}'s previous reports' count is: {self.user_id_to_number_of_reported_posts[message.author.id]}\n" +\
+            f"It was posted in the following channel: {message.channel.name}" +\
+            f"The channel {message.channel.name} had a total of {self.channel_id_to_moderator_flag_count[message.channel.id]} flagged transgressions."
+        return reply
 
 
 
