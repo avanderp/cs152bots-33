@@ -194,6 +194,7 @@ class Report:
                 # take the actions associated with the options the moderator chose in the previous state
                 # get the emoji options selected for the current state
                 current_state_emoji_options = self.state_to_selected_emoji_options[self.state]
+                await self.take_actions(current_state_emoji_options)
                 reply = self.update_actions(current_state_emoji_options)
 
                 # check for non-trivial reply
@@ -264,9 +265,7 @@ class Report:
         if self.state in STATE_TO_SINGLE_NEXT_STATE:
             self.state = STATE_TO_SINGLE_NEXT_STATE[self.state]
 
-
-    def update_actions(self, current_state_emoji_options):
-
+    async def take_actions(self, current_state_emoji_options):
         # generate a message to the user of actions that will be taken and respond to actions
         if self.state in STATE_TO_EMOJI_OPTIONS and len(current_state_emoji_options):
             actions = [emoji_option.action for emoji_option in current_state_emoji_options if emoji_option.action]
@@ -274,6 +273,12 @@ class Report:
             for action in actions:
                 if action == ModeratorAction.MUTE_POSTER_TO_REPORTER:
                     await self.client.note_in_channel_mute_poster_to_reporter(self.message, self.message.author.name, self.client.poster_to_reporter[self.message.author.name]) # TODO: pass in parameters
+
+    def update_actions(self, current_state_emoji_options):
+
+        # generate a message to the user of actions that will be taken and respond to actions
+        if self.state in STATE_TO_EMOJI_OPTIONS and len(current_state_emoji_options):
+            actions = [emoji_option.action for emoji_option in current_state_emoji_options if emoji_option.action]
 
             if len(actions):
                 reply = "We have taken the following actions based on your responses: \n"
