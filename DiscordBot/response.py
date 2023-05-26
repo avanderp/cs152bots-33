@@ -232,7 +232,7 @@ class Response:
 
         # handling advanced transitions
         if self.state == State.ASK_IF_ELEVATE_TO_ADVANCED_MODERATORS:
-            self.state = State.GENERATE_SUMMARY_FOR_ADVANCED_MODERATORS if self.elevate_to_advanced_moderators else State.THANK_MODERATOR  
+            self.state = State.ASK_FOR_REASON_FOR_ELEVATING if self.elevate_to_advanced_moderators else State.THANK_MODERATOR  
             return
 
 
