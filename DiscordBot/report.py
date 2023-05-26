@@ -314,7 +314,8 @@ class Report:
         reply.append(self.client.generate_message_metadata_summary(self.message))
         reply.append("Here are the reporter's answers to the following questions:")
         for state in self.state_to_selected_emoji_options:
-            reply.append(f"{STATE_TO_MESSAGE_PREFIX[state]} -> {self.state_to_selected_emoji_options[state].emoji}: {self.state_to_selected_emoji_options[state].option_str}")
+            text = " AND ".join([f"{emoji_option.emoji}: {emoji_option.option_str}" for emoji_option in self.state_to_selected_emoji_options[state]])
+            reply.append(f"{STATE_TO_MESSAGE_PREFIX[state]} -> {text}")
         return "\n".join(reply)
         # TODO: include the message metadata string
 
@@ -370,7 +371,8 @@ class AutomatedReport:
         reply.append(self.client.generate_message_metadata_summary(self.message))
         reply.append("Here are the reporter's answers to the following questions:")
         for state in self.state_to_selected_emoji_options:
-            reply.append(f"{STATE_TO_MESSAGE_PREFIX[state]} -> {self.state_to_selected_emoji_options[state].emoji}: {self.state_to_selected_emoji_options[state].option_str}")
+            text = " AND ".join([f"{emoji_option.emoji}: {emoji_option.option_str}" for emoji_option in self.state_to_selected_emoji_options[state]])
+            reply.append(f"{STATE_TO_MESSAGE_PREFIX[state]} -> {text}")
         
 
         # TODO: include the message metadata string
