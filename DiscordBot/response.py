@@ -277,7 +277,7 @@ class Response:
 
         # TODO: include the message metadata string
         reply = [self.report.generate_summary(self.report_id)]
-        reply.append("\nBASELINE MODERATOR REPORT SUMMARY:\n" )
+        reply.append("\nBASELINE MODERATOR REPORT SUMMARY:" )
         reply.append("Here are the moderator's answers to the following questions:")
         for state in self.moderator_state_to_selected_emoji:
             text = " AND ".join([f"{emoji_option.emoji}: {emoji_option.option_str}" for emoji_option in self.moderator_state_to_selected_emoji[state]])

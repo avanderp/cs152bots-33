@@ -314,7 +314,7 @@ class Report:
 
         reply.append(f"Generating report: {report_id}")
         reply.append(self.client.generate_message_metadata_summary(self.message))
-        reply.append("\nUSER REPORT SUMMARY:\n" )
+        reply.append("\nUSER REPORT SUMMARY:" )
         reply.append("Here are the reporter's answers to the following questions:")
         for state in self.state_to_selected_emoji_options:
             text = " AND ".join([f"{emoji_option.emoji}: {emoji_option.option_str}" for emoji_option in self.state_to_selected_emoji_options[state]])
@@ -372,7 +372,7 @@ class AutomatedReport:
         else:
             reply.append(MODERATE_PRIORITY_TAG)
         reply.append(self.client.generate_message_metadata_summary(self.message))
-        reply.append("\AUTOMATED REPORT SUMMARY:\n" )
+        reply.append("\nAUTOMATED REPORT SUMMARY:" )
         reply.append("Here are the set of actions taken by the automated report:")
         for action in self.set_of_actions_taken:
             # text = " AND ".join([f"{emoji_option.emoji}: {emoji_option.option_str}" for emoji_option in self.set_of_actions_taken[state]])
