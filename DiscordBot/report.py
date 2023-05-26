@@ -149,6 +149,7 @@ class Report:
 
             # Here we've found the message - it's up to you to decide what to do next!
             self.state = State.MESSAGE_IDENTIFIED
+            self.message = message
             return ["I found this message:", "```" + message.author.name + ": " + message.content + "```", \
                     "Thank you for creating a report! We'll be asking you a few questions to gather extra details about the report. \n " \
                     "Type `continue` to continue the report, and say `cancel` to cancel at any point."]
