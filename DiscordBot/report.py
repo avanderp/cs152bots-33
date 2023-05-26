@@ -273,7 +273,7 @@ class Report:
 
             for action in actions:
                 if action == ModeratorAction.MUTE_POSTER_TO_REPORTER:
-                    await self.client.note_in_channel_mute_poster_to_reporter(self.message, self.message.author.name, self.reporter_name) # TODO: pass in parameters
+                    await self.client.note_in_channel_mute_poster_to_reporter(self.message, self.message.author.name, self.reporter_name) 
 
     def update_actions(self, current_state_emoji_options):
 
@@ -311,12 +311,10 @@ class Report:
     def report_finished(self):
         return self.state == State.REPORT_FINISHED
 
-    # TODO
     def generate_summary(self, report_id):  # there may be additional parameters to add in the metadata (user id, etc.) to the report summary
         # based on the contents of self.state_to_selected_emoji_options (the options selected at each state by the user)
         # format a string that will be sent to the moderator channel to describe the report
 
-        # TODO: start with HIGH_PRIORITY_TAG if self.high_severity is true otherwise MODERATE_PRIORITY_TAG
         reply = []
         if self.high_severity:
             reply.append(HIGH_PRIORITY_TAG)
@@ -331,7 +329,6 @@ class Report:
             text = " AND ".join([f"{emoji_option.emoji}: {emoji_option.option_str}" for emoji_option in self.state_to_selected_emoji_options[state]])
             reply.append(f"{STATE_TO_MESSAGE_PREFIX[state]} -> {text}")
         return "\n".join(reply)
-        # TODO: include the message metadata string
 
     
 
@@ -345,8 +342,7 @@ class AutomatedReport:
         self.alert_alert_moderator_to_high_report_user = False
         self.high_severity = self.very_high_disinfo_prob
 
-        # TODO: use this set of actions to only display to the moderator not-already-automatically-taken options in thier reporting flow
-        # aka when we ask the moderator to select actions, only utilize the EmojiOptions whose actions aren't already stored here
+        
         self.set_of_actions_taken = set()  # this will contain ModeratorActions
 
     async def act_on_very_high_disinfo_message(self):
@@ -368,12 +364,9 @@ class AutomatedReport:
             await self.client.temporarily_mute_user(self.message)
             self.set_of_actions_taken.add(ModeratorAction.TEMPORARILY_MUTE_USER)
 
-    # TODO
     def generate_summary(self):
         # based on the contents of self.state_to_selected_emoji_options (the options selected at each state by the user)
         # format a string that will be sent to the moderator channel to describe the report
-
-        # TODO: start with HIGH_PRIORITY_TAG if very_high_disinfo_prob else MODERATE_PRIORITY_TAG
 
         reply = []
         if self.high_severity:
@@ -388,12 +381,9 @@ class AutomatedReport:
             reply.append(f"{ACTION_TO_POST_ACTION_MESSAGE[action]}")
         
 
-        # TODO: include the message metadata string
 
-        # TODO: if alert_moderator_to_high_report_user is true, then also add another string to the msg like "user {name} is also known to have a high number of reported posts, with {self.client.user_id_to_number_of_removed_posts[message.author.id]} of their posts being reported"
         if self.alert_alert_moderator_to_high_report_user:
             reply.append(f"User {self.message.author.name} is also known to have a high number of reported posts, with {self.client.user_id_to_number_of_removed_posts[self.message.author.id]} of their posts being reported.")
-        # TODO: if very_high_disinfo prob is true, note that we took the actions indicated in our moderator reporting flow
         if self.very_high_disinfo_prob:
             reply.append(f"Since this post has a high disinforamtion probability >{self.client.VERY_HIGH_DISINFO_PROB_THRESHOLD}, we took the actions indicated in our moderator reporting flow.")
         return "\n".join(reply)

@@ -269,14 +269,12 @@ class Response:
         # we don't need to print a message to the user immediately upon reacting
         return []
 
-    # TODO 
     def generate_summary_for_advanced_moderators(self):
         # Generate a message that summarizes the options selected during both the user and baseline moderator reporting flows
         # use the self.report object to access the self.report.state_to_selected_emoji_options or invoke self.report.generate_summary(self.report_id)
 
         # send this summary to the moderator
 
-        # TODO: include the message metadata string
         reply = [self.report.generate_summary(self.report_id)]
         reply.append("\nBASELINE MODERATOR REPORT SUMMARY:" )
         reply.append("Here are the moderator's answers to the following questions:")
@@ -285,7 +283,6 @@ class Response:
             reply.append(f"{STATE_TO_MESSAGE_PREFIX[state]} -> {text}")
         return "\n".join(reply)
 
-        # TODO: include the summaries from both the user/automated and moderator report flows
 
 
     def response_cancelled(self):

@@ -49,7 +49,7 @@ class ModBot(discord.Client):
         intents = discord.Intents.default()
         intents.messages = True
         intents.reactions = True
-        #intents.message_content = True # Added # NOTE: Abi has to comment this out for her implementation
+        #intents.message_content = True # NOTE: Abi has to comment this out for her implementation
         intents.dm_reactions = True
         intents.guild_reactions = True
         super().__init__(command_prefix='.', intents=intents, max_messages = 1000)
@@ -123,8 +123,6 @@ class ModBot(discord.Client):
         report_author_id = user.id
         # If we don't currently have an active report for this user
         if report_author_id not in self.reports:
-            # reply =  "You do not have any currently active reports. Please start a new report by typing `report`.\n"
-            # await message.channel.send(reply) 
             return
 
         # Let the report class handle this message; forward all the reactions to the report
@@ -322,7 +320,6 @@ class ModBot(discord.Client):
     async def increment_group_transgression_counter(self, message):
         self.channel_id_to_moderator_flag_count[message.channel.id] += 1
 
-    # TODO
     def generate_message_metadata_summary(self, message):
         reply = "\nPOST METADATA:\n" +\
             f"The following message: {message.content}\n" + \
