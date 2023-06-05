@@ -12,6 +12,8 @@ from response import Response
 import pdb
 from collections import defaultdict
 
+import automated
+
 
 # Set up logging to the console
 logger = logging.getLogger('discord')
@@ -193,6 +195,7 @@ class ModBot(discord.Client):
         # Only handle messages sent in the "group-#" channel
         if message.channel.name == f'group-{self.group_num}':
             # pass along to the automated flagging logics
+            print("HANDLING AUTOMATED MESSAGE")
             await self.automated_message_flagging(message)
 
             
@@ -204,14 +207,15 @@ class ModBot(discord.Client):
     async def automated_message_flagging(self, message):
         # check to see if the message fits our placeholder template for messages to be auto-flagged from the regular channel
 
-        m = re.search(self.AUTO_FLAG_REGEX, message.content)
+        ex_preds, ex_scores = generate_ensemble_preds_and_scores(text_samples_disinfo)
+        # m = re.search(self.AUTO_FLAG_REGEX, message.content)
         
-        # does not match the placeholder autoflagging template
-        if not m:
-            # don't do anything with the message
-            return
+        # # does not match the placeholder autoflagging template
+        # if not m:
+        #     # don't do anything with the message
+        #     return
 
-        disinfo_prob = float(message.content[message.content.rindex(self.DISINFO_PROB_PREFIX_CHAR)+1:])
+        disinfo_prob = ex_scores[0] #float(message.content[message.content.rindex(self.DISINFO_PROB_PREFIX_CHAR)+1:])
         print(f"The disinfo prob is {disinfo_prob}")
         print(disinfo_prob > self.VERY_HIGH_DISINFO_PROB_THRESHOLD)
 
