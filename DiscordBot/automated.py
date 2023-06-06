@@ -36,12 +36,13 @@ import matplotlib.pyplot as plt
 import json
 import pathlib
 curr_working_dir = pathlib.Path().resolve()
+path_to_data_and_models = "{}/../Data_And_models/".format(curr_working_dir)
 # import ensemble_model.joblib
 
 BERT_CHECKPOINT_FILE = "BERT_base_uncased_best_model.ckpt"
-ENSEMBLE_MODEL_FILE = "{}/../Data_And_Models/ensemble_model.joblib".format(curr_working_dir)
+ENSEMBLE_MODEL_FILE = "{}ensemble_model.joblib".format(path_to_data_and_models)
 
-TRAIN_FILE = "{}full_train.csv" # contains examples that Chat-GPT uses to learn how to predict
+TRAIN_FILE = "{}full_train.csv".format(path_to_data_and_models) # contains examples that Chat-GPT uses to learn how to predict
 
 MAX_LEN = 128 # used for BERT model
 
