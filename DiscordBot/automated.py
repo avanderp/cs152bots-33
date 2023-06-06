@@ -34,11 +34,14 @@ import io
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import pathlib
+curr_working_dir = pathlib.Path().resolve()
+# import ensemble_model.joblib
 
 BERT_CHECKPOINT_FILE = "BERT_base_uncased_best_model.ckpt"
-ENSEMBLE_MODEL_FILE = "'ensemble_model.joblib'"
+ENSEMBLE_MODEL_FILE = "{}/../Data_And_Models/ensemble_model.joblib".format(curr_working_dir)
 
-TRAIN_FILE = "full_train.csv" # contains examples that Chat-GPT uses to learn how to predict
+TRAIN_FILE = "{}full_train.csv" # contains examples that Chat-GPT uses to learn how to predict
 
 MAX_LEN = 128 # used for BERT model
 
@@ -61,7 +64,7 @@ with open("tokens.json") as f:
 bert_model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=2)
 bert_model.load_state_dict(torch.load(BERT_CHECKPOINT_FILE, map_location=torch.device('cpu')))
 bert_model.eval()
-ensemble_model = load('ensemble_model.joblib')
+ensemble_model = load(ENSEMBLE_MODEL_FILE)
 
 wordnet_lemmatizer = WordNetLemmatizer()
 porter_stemmer  = PorterStemmer()
