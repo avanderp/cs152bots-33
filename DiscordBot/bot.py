@@ -13,6 +13,7 @@ import pdb
 from collections import defaultdict
 
 import automated
+from automated import *
 
 
 # Set up logging to the console
@@ -42,8 +43,8 @@ MUTE_TIME_IN_SECONDS = 5
 class ModBot(discord.Client):
 
     AUTO_FLAG_REGEX = "AUTO_FLAG DISINFO_PROB=[0-9]*\.[0-9]+"
-    MODERATE_DISINFO_PROB_THRESHOLD = 0.6
-    VERY_HIGH_DISINFO_PROB_THRESHOLD = 0.9
+    MODERATE_DISINFO_PROB_THRESHOLD = 0.9
+    VERY_HIGH_DISINFO_PROB_THRESHOLD = 0.97
     USER_HIGH_REPORT_AMOUNT_THRESHOLD = 5
     DISINFO_PROB_PREFIX_CHAR = '='
 
@@ -64,6 +65,10 @@ class ModBot(discord.Client):
         self.next_moderator_response_id = 0
         self.user_id_to_number_of_reported_posts = defaultdict(int) # Map from user IDs to the number of the user's report that the ModBot has removed (default 0)
         self.channel_id_to_moderator_flag_count = defaultdict(int)
+
+        self.user_id_to_report_id_to_actions = defaultdict(dict)  # nested dictionary, stores all actions taken on the reports associated with a given user
+        self.channel_id_to_report_id_to_actions = defaultdict(dict)  # nested dictionary, stores all actions taken on the reports associated with a given channel (group)
+
         self.personal_mod_channel = None
 
     async def on_ready(self):
@@ -207,7 +212,7 @@ class ModBot(discord.Client):
     async def automated_message_flagging(self, message):
         # check to see if the message fits our placeholder template for messages to be auto-flagged from the regular channel
 
-        ex_preds, ex_scores = generate_ensemble_preds_and_scores(text_samples_disinfo)
+        ex_preds, ex_scores = generate_ensemble_preds_and_scores([message.content])
         # m = re.search(self.AUTO_FLAG_REGEX, message.content)
         
         # # does not match the placeholder autoflagging template
@@ -276,7 +281,20 @@ class ModBot(discord.Client):
         
         # If the report is finished, update the count of the poster's reported messages
         if self.moderator_responses[moderator_id].response_finished():
-            self.user_id_to_number_of_reported_posts[self.moderator_responses[moderator_id].reported_message.author.id] += 1
+            poster_id = self.moderator_responses[moderator_id].reported_message.author.id
+            report_id = self.moderator_responses[moderator_id].report_id
+
+            set_of_mod_actions_taken = set()
+            for state, emoji_options in self.moderator_responses[moderator_id].moderator_state_to_selected_emoji.items():
+                for emoji_option in emoji_options:
+                    set_of_mod_actions_taken.add(emoji_option.action)
+            set_of_all_actions_taken = set_of_mod_actions_taken.union(self.moderator_responses[moderator_id].set_of_previous_actions_taken)
+
+            # log the actions associated with the user and channel (group)
+            self.user_id_to_number_of_reported_posts[poster_id] += 1
+            self.user_id_to_report_id_to_actions[poster_id][report_id] = set_of_all_actions_taken
+            self.channel_id_to_report_id_to_actions[self.moderator_responses[moderator_id].reported_message.channel.id][report_id] = set_of_all_actions_taken
+            
             self.moderator_responses.pop(moderator_id)
             return
 

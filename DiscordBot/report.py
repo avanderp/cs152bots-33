@@ -376,16 +376,20 @@ class AutomatedReport:
         reply.append(f"Report ID: {self.report_id}")
         reply.append(self.client.generate_message_metadata_summary(self.message))
         reply.append("\nAUTOMATED REPORT SUMMARY:" )
-        reply.append("Here are the set of actions taken by the automated report:")
-        for action in self.set_of_actions_taken:
-            reply.append(f"{ACTION_TO_POST_ACTION_MESSAGE[action]}")
+        #reply.append(f"Classifier Disinformation Probability Score: {self.disinfo_prob}")
+        if len(self.set_of_actions_taken):
+            reply.append("Here are the set of actions taken by the automated report:")
+            for action in self.set_of_actions_taken:
+                reply.append(f" •    {ACTION_TO_POST_ACTION_MESSAGE[action]}")
+        else:
+            reply.append("This post was marked with a moderate disinformation probability. No actions have been taken on the post so far.")
         
 
 
         if self.alert_alert_moderator_to_high_report_user:
             reply.append(f"User {self.message.author.name} is also known to have a high number of reported posts, with {self.client.user_id_to_number_of_removed_posts[self.message.author.id]} of their posts being reported.")
         if self.very_high_disinfo_prob:
-            reply.append(f"Since this post has a high disinforamtion probability >{self.client.VERY_HIGH_DISINFO_PROB_THRESHOLD}, we took the actions indicated in our moderator reporting flow.")
+            reply.append(f"Since this post has a very high disinformation probability, we took the actions indicated in our moderator reporting flow (shown above).")
         return "\n".join(reply)
 
 

@@ -16,8 +16,9 @@ from typing import List
 
 import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
-from keras.utils import pad_sequences
 # from sklearn.model_selection import train_test_split
+
+# download this library from https://pypi.org/project/tweet-preprocessor/
 import preprocessor as p
 
 from transformers import XLMModel, BertTokenizer, BertForSequenceClassification, RobertaTokenizerFast, RobertaForSequenceClassification
@@ -36,11 +37,11 @@ import matplotlib.pyplot as plt
 import json
 import pathlib
 curr_working_dir = pathlib.Path().resolve()
-path_to_data_and_models = "{}/../Data_And_models/".format(curr_working_dir)
+path_to_data_and_models = "{}/../Data_And_Models/".format(curr_working_dir)
 # import ensemble_model.joblib
 
-BERT_CHECKPOINT_FILE = "BERT_base_uncased_best_model.ckpt"
-ENSEMBLE_MODEL_FILE = "{}ensemble_model.joblib".format(path_to_data_and_models)
+BERT_CHECKPOINT_FILE = "../Data_And_Models/BERT_base_uncased_best_model.ckpt"
+ENSEMBLE_MODEL_FILE = "../Data_And_Models/ensemble_model.joblib"  #"{}ensemble_model.joblib".format(path_to_data_and_models)
 
 TRAIN_FILE = "{}full_train.csv".format(path_to_data_and_models) # contains examples that Chat-GPT uses to learn how to predict
 
