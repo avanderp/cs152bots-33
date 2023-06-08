@@ -4,6 +4,7 @@ import nltk
 # nltk.download('wordnet')
 # nltk.download('stopwords')
 
+from deep_translator import GoogleTranslator
 from joblib import load
 import numpy as np
 import openai
@@ -177,7 +178,20 @@ def generate_gpt_predictions(text_inputs, prefix_messages = gpt_messages):
   num_preds = [assign_label(clean_pred(pred)) for pred in preds]
   return num_preds
 
+def translate_msgs(text_inputs):
+  translated_inputs = []
+  for text in text_inputs:
+    try:
+      translated_text = GoogleTranslator(source='auto', target='en').translate(text)
+      translated_text = translated_text if translated_text else ""
+      translated_inputs.append(text)
+    except Exception as e:
+      print(e)
+      translated_inputs.append(text)
+  return translated_inputs
+
 def generate_ensemble_preds_and_scores(text_inputs, ensemble_model = ensemble_model):
+  text_inputs = translate_msgs(text_inputs)
   bert_preds, bert_scores = generate_bert_predictions(text_inputs)
   gpt_preds = generate_gpt_predictions(text_inputs)
 
